@@ -2,7 +2,7 @@ services:
   - type: web
     name: gc-overlay-live
     env: node
-    plan: starter
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
@@ -12,7 +12,3 @@ services:
         value: production
       - key: ADMIN_KEY
         generateValue: true
-    disk:
-      name: gc-overlay-data
-      mountPath: /app/data
-      sizeGB: 1

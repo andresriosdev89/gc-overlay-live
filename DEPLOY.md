@@ -14,7 +14,7 @@ Links locais:
 
 ## Colocar publico
 
-Use um servico que rode Node com disco persistente, como Render, Railway, Fly.io ou uma VPS.
+Use um servico que rode Node, como Render, Railway, Fly.io ou uma VPS.
 
 Variaveis importantes:
 
@@ -24,6 +24,8 @@ Variaveis importantes:
 - `DATA_DIR`: pasta de dados persistentes. Padrao: `./data`.
 - `MAX_UPLOAD_MB`: limite de upload. Padrao: `250`.
 
+No plano gratis do Render, o app funciona, mas arquivos enviados e estado podem resetar quando o servico dormir ou reiniciar. Para manter tudo salvo permanentemente no Render, e necessario adicionar disco persistente, que pode exigir cartao.
+
 ## Links quando estiver publico
 
 Troque `https://seu-dominio.com` pelo dominio do deploy:
@@ -32,7 +34,7 @@ Troque `https://seu-dominio.com` pelo dominio do deploy:
 - Overlay publico: `https://seu-dominio.com/overlay.html?v=11`
 - Reset protegido: `https://seu-dominio.com/cache-reset.html?key=SUA_CHAVE`
 
-## Render
+## Render gratis
 
 Este projeto ja inclui `render.yaml`.
 
@@ -41,6 +43,20 @@ Este projeto ja inclui `render.yaml`.
 3. Selecione o repositorio.
 4. Depois do deploy, copie o valor de `ADMIN_KEY`.
 5. Use o link do painel com `?key=...` e o link do overlay no OBS/vMix.
+
+Se aparecer pedido de pagamento, confirme se o `render.yaml` esta com `plan: free` e sem bloco `disk`.
+
+## Render com persistencia
+
+Para salvar midias e estado permanentemente, adicione um Disk:
+
+```text
+Name: gc-overlay-data
+Mount Path: /app/data
+Size: 1 GB
+```
+
+Essa opcao pode pedir cartao.
 
 ## Docker
 
