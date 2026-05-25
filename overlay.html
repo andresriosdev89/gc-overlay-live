@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>GC Overlay - Live</title>
+    <link rel="stylesheet" href="styles.css?v=11" />
+  </head>
+  <body class="overlay-body">
+    <main class="broadcast-frame" id="overlayRoot">
+      <div class="media-grid" id="mediaGrid">
+        <section class="media-card" id="leftTopCard" data-window="leftTop">
+          <img id="leftTopImage" alt="" />
+          <span class="placeholder">Imagem 1</span>
+        </section>
+
+        <section class="media-card" id="leftBottomCard" data-window="leftBottom">
+          <img id="leftBottomImage" alt="" />
+          <span class="placeholder">Imagem 2</span>
+        </section>
+
+        <section class="main-story media-card" id="mainCard" data-window="main">
+          <img id="mainImage" alt="" />
+          <video id="mainVideo" muted loop playsinline preload="metadata"></video>
+          <div class="story-caption">
+            <p id="mainKicker">PODE PINTAR ENTRE OS 26!</p>
+            <p id="mainSubtitle">
+              A convocacao de Neymar para a Copa do Mundo ainda esta na pauta do tecnico.
+            </p>
+          </div>
+        </section>
+
+        <section class="social-card media-card" id="postCard" data-window="post">
+          <img id="postImage" alt="" />
+          <video id="postVideo" muted loop playsinline preload="metadata"></video>
+          <div class="social-fallback">
+            <strong id="postAuthor">Instagram</strong>
+            <p id="postText">
+              Use o painel de controle para inserir o print do post ou escrever o texto aqui.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <section class="lower-third" id="lowerThird">
+        <div class="logo-box">
+          <img id="logoImage" alt="" />
+          <span class="placeholder">Logo</span>
+        </div>
+        <div class="gc-text">
+          <h1 id="gcTitle">ANCELOTTI RENOVOU COM A SELECAO!</h1>
+          <p id="gcSubtitle">NOVO VINCULO DO TREINADOR VAI ATE A COPA DE 2030</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="shared.js?v=11"></script>
+    <script src="overlay.js?v=11"></script>
+  </body>
+</html>

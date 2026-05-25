@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Painel do GC Overlay</title>
+    <link rel="stylesheet" href="styles.css?v=11" />
+  </head>
+  <body class="control-body">
+    <main class="control-shell">
+      <header class="control-header">
+        <div>
+          <p class="eyebrow">Overlay para live</p>
+          <h1>GC editavel com fotos e PNGs</h1>
+        </div>
+        <nav class="header-actions">
+          <a class="button ghost" href="overlay.html?v=11" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <button class="button danger" id="resetButton" type="button">Resetar</button>
+        </nav>
+      </header>
+
+      <section class="editor-layout">
+        <form class="editor-panel" id="controlForm">
+          <fieldset>
+            <legend>Texto principal</legend>
+            <label>
+              Manchete do GC
+              <input id="gcTitleInput" name="gcTitle" maxlength="64" />
+            </label>
+            <label>
+              Subtitulo do GC
+              <input id="gcSubtitleInput" name="gcSubtitle" maxlength="92" />
+            </label>
+            <label>
+              Chamada sobre a imagem central
+              <input id="mainKickerInput" name="mainKicker" maxlength="42" />
+            </label>
+            <label>
+              Linha pequena da imagem central
+              <textarea id="mainSubtitleInput" name="mainSubtitle" rows="3" maxlength="160"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Post / print lateral</legend>
+            <label>
+              Autor ou rede
+              <input id="postAuthorInput" name="postAuthor" maxlength="34" />
+            </label>
+            <label>
+              Texto reserva do post
+              <textarea id="postTextInput" name="postText" rows="4" maxlength="260"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Cores do texto</legend>
+            <div class="control-grid two-cols">
+              <label>
+                Manchete
+                <input type="color" id="gcTitleColorInput" />
+              </label>
+              <label>
+                Subtitulo
+                <input type="color" id="gcSubtitleColorInput" />
+              </label>
+              <label>
+                Chamada central
+                <input type="color" id="mainKickerColorInput" />
+              </label>
+              <label>
+                Fundo da chamada
+                <input type="color" id="mainKickerBgInput" />
+              </label>
+              <label>
+                Linha pequena
+                <input type="color" id="mainSubtitleColorInput" />
+              </label>
+              <label>
+                Fundo linha pequena
+                <input type="color" id="mainSubtitleBgInput" />
+              </label>
+              <label>
+                Texto do post
+                <input type="color" id="postTextColorInput" />
+              </label>
+              <label>
+                Fundo do post
+                <input type="color" id="postBgColorInput" />
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Tamanho do texto</legend>
+            <label class="range-control">
+              <span>Manchete do GC <strong id="gcTitleSizeValue"></strong></span>
+              <input type="range" id="gcTitleSizeInput" min="24" max="92" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Subtitulo do GC <strong id="gcSubtitleSizeValue"></strong></span>
+              <input type="range" id="gcSubtitleSizeInput" min="12" max="46" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Chamada central <strong id="mainKickerSizeValue"></strong></span>
+              <input type="range" id="mainKickerSizeInput" min="16" max="58" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Linha pequena central <strong id="mainSubtitleSizeValue"></strong></span>
+              <input type="range" id="mainSubtitleSizeInput" min="8" max="26" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Texto do post <strong id="postSizeValue"></strong></span>
+              <input type="range" id="postSizeInput" min="10" max="32" step="1" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Layout e janelas</legend>
+            <label>
+              Proporcao do overlay
+              <select id="ratioInput">
+                <option value="landscape">Horizontal 16:9</option>
+                <option value="vertical">Vertical 9:16</option>
+                <option value="square">Quadrado 1:1</option>
+              </select>
+            </label>
+            <div class="switch-grid">
+              <label>
+                <input type="checkbox" id="leftTopVisibleInput" />
+                Janela 1
+              </label>
+              <label>
+                <input type="checkbox" id="leftBottomVisibleInput" />
+                Janela 2
+              </label>
+              <label>
+                <input type="checkbox" id="mainVisibleInput" />
+                Janela central
+              </label>
+              <label>
+                <input type="checkbox" id="postVisibleInput" />
+                Janela post
+              </label>
+              <label>
+                <input type="checkbox" id="logoVisibleInput" />
+                Logo do GC
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Imagens, PNGs e videos</legend>
+            <label class="file-control">
+              Foto superior esquerda
+              <input type="file" id="leftTopFile" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <label class="file-control">
+              Foto inferior esquerda
+              <input type="file" id="leftBottomFile" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <label class="file-control">
+              Foto ou video central 16:9
+              <input type="file" id="mainFile" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/ogg" />
+            </label>
+            <label class="file-control">
+              Print ou video post 9:16
+              <input type="file" id="postFile" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/ogg" />
+            </label>
+            <label class="file-control">
+              Logo/PNG do GC
+              <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" />
+            </label>
+            <label class="file-control">
+              Imagem base do GC
+              <input type="file" id="gcBaseFile" accept="image/png,image/jpeg,image/webp" />
+            </label>
+          </fieldset>
+        </form>
+
+        <aside class="preview-panel">
+          <div class="preview-window">
+            <iframe title="Preview do overlay" src="overlay.html?v=11"></iframe>
+          </div>
+          <div class="tips">
+            <strong>Links da live</strong>
+            <p>Use <code>/overlay.html</code> como Browser Source no OBS/vMix. O painel pode ficar aberto em <code>/control.html</code>.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="shared.js?v=11"></script>
+    <script src="control.js?v=11"></script>
+  </body>
+</html>

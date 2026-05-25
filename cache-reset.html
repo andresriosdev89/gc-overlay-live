@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Limpando cache do GC Overlay</title>
+  </head>
+  <body>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const key = params.get("key") || localStorage.getItem("gc-overlay-admin-key") || "";
+      if (key) localStorage.setItem("gc-overlay-admin-key", key);
+      localStorage.removeItem("gc-overlay-state-v1");
+      localStorage.removeItem("gc-overlay-state-v2");
+      localStorage.removeItem("gc-overlay-state-v3");
+      sessionStorage.clear();
+      indexedDB.deleteDatabase("gc-overlay-media-v1");
+      const request = new XMLHttpRequest();
+      request.open("POST", "/reset", true);
+      if (key) request.setRequestHeader("X-Overlay-Key", key);
+      request.onloadend = () => location.replace("control.html?v=11&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
+      request.onerror = () => location.replace("control.html?v=11&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
+      request.send();
+    </script>
+  </body>
+</html>
