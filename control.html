@@ -7,17 +7,20 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Painel do GC Overlay</title>
-    <link rel="stylesheet" href="styles.css?v=11" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body class="control-body">
     <main class="control-shell">
       <header class="control-header">
         <div>
           <p class="eyebrow">Overlay para live</p>
-          <h1>GC editavel com fotos e PNGs</h1>
+          <h1>Painel OWTV</h1>
+          <p class="save-status" id="saveStatus" role="status" aria-live="polite">Carregando conteúdo...</p>
         </div>
         <nav class="header-actions">
-          <a class="button ghost" href="overlay.html?v=11" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="overlay.html?v=13" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="#livePanel">Acompanhar live</a>
+          <button class="button ghost" id="retryButton" type="button" hidden>Tentar salvar</button>
           <button class="button danger" id="resetButton" type="button">Resetar</button>
         </nav>
       </header>
@@ -28,19 +31,19 @@
             <legend>Texto principal</legend>
             <label>
               Manchete do GC
-              <input id="gcTitleInput" name="gcTitle" maxlength="64" />
+              <textarea id="gcTitleInput" name="gcTitle" rows="2" maxlength="200"></textarea>
             </label>
             <label>
               Subtitulo do GC
-              <input id="gcSubtitleInput" name="gcSubtitle" maxlength="92" />
+              <textarea id="gcSubtitleInput" name="gcSubtitle" rows="2" maxlength="300"></textarea>
             </label>
             <label>
               Chamada sobre a imagem central
-              <input id="mainKickerInput" name="mainKicker" maxlength="42" />
+              <textarea id="mainKickerInput" name="mainKicker" rows="2" maxlength="140"></textarea>
             </label>
             <label>
               Linha pequena da imagem central
-              <textarea id="mainSubtitleInput" name="mainSubtitle" rows="3" maxlength="160"></textarea>
+              <textarea id="mainSubtitleInput" name="mainSubtitle" rows="3" maxlength="500"></textarea>
             </label>
           </fieldset>
 
@@ -48,16 +51,32 @@
             <legend>Post / print lateral</legend>
             <label>
               Autor ou rede
-              <input id="postAuthorInput" name="postAuthor" maxlength="34" />
+              <input id="postAuthorInput" name="postAuthor" maxlength="100" />
             </label>
             <label>
               Texto reserva do post
-              <textarea id="postTextInput" name="postText" rows="4" maxlength="260"></textarea>
+              <textarea id="postTextInput" name="postText" rows="6" maxlength="2000"></textarea>
             </label>
           </fieldset>
 
           <fieldset>
-            <legend>Cores do texto</legend>
+            <legend>Modelo da tarja</legend>
+            <label>
+              Escolha o visual do GC
+              <select id="tarjaPresetInput">
+                <option value="classic">Clássica OWTV</option>
+                <option value="cream">Creme esportiva</option>
+                <option value="stadium">Campo azul</option>
+                <option value="frame">Moldura de destaque</option>
+                <option value="night">Noite digital</option>
+                <option value="duotone">Faixa dupla vibrante</option>
+              </select>
+            </label>
+            <p class="field-help">Modelos inspirados nas referências enviadas. A logo, os textos e as cores continuam editáveis.</p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Cores da tarja e do texto</legend>
             <div class="control-grid two-cols">
               <label>
                 Manchete
@@ -66,6 +85,26 @@
               <label>
                 Subtitulo
                 <input type="color" id="gcSubtitleColorInput" />
+              </label>
+              <label>
+                Fundo da tarja
+                <input type="color" id="gcBgColorInput" />
+              </label>
+              <label>
+                Borda da tarja
+                <input type="color" id="gcBorderColorInput" />
+              </label>
+              <label>
+                Cor de destaque
+                <input type="color" id="gcAccentColorInput" />
+              </label>
+              <label>
+                Fundo da manchete na faixa dupla
+                <input type="color" id="gcTitleBgColorInput" />
+              </label>
+              <label>
+                Fundo do subtítulo na faixa dupla
+                <input type="color" id="gcSubtitleBgColorInput" />
               </label>
               <label>
                 Chamada central
@@ -95,7 +134,7 @@
           </fieldset>
 
           <fieldset>
-            <legend>Tamanho do texto</legend>
+            <legend>Tamanho do texto e logo</legend>
             <label class="range-control">
               <span>Manchete do GC <strong id="gcTitleSizeValue"></strong></span>
               <input type="range" id="gcTitleSizeInput" min="24" max="92" step="1" />
@@ -115,6 +154,22 @@
             <label class="range-control">
               <span>Texto do post <strong id="postSizeValue"></strong></span>
               <input type="range" id="postSizeInput" min="10" max="32" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Tamanho da logo <strong id="logoSizeValue"></strong></span>
+              <input type="range" id="logoSizeInput" min="50" max="200" step="5" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Live do YouTube</legend>
+            <label>
+              Link da live
+              <input type="url" id="liveUrlInput" placeholder="https://www.youtube.com/watch?v=..." />
+            </label>
+            <label>
+              Meta de likes
+              <input type="number" id="likeGoalInput" min="1" max="1000000000" step="1" />
             </label>
           </fieldset>
 
@@ -175,7 +230,7 @@
               <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" />
             </label>
             <label class="file-control">
-              Imagem base do GC
+              Imagem base do GC (somente Clássica)
               <input type="file" id="gcBaseFile" accept="image/png,image/jpeg,image/webp" />
             </label>
           </fieldset>
@@ -183,8 +238,27 @@
 
         <aside class="preview-panel">
           <div class="preview-window">
-            <iframe title="Preview do overlay" src="overlay.html?v=11"></iframe>
+            <iframe title="Preview do overlay" src="overlay.html?v=13"></iframe>
           </div>
+          <section class="live-panel" id="livePanel" aria-label="Acompanhamento da live">
+            <div class="live-stats">
+              <div><span>Likes</span><strong id="likeCount">—</strong></div>
+              <div><span>Meta</span><strong id="likeProgress">—</strong></div>
+              <div><span>Inscritos</span><strong id="subscriberCount">—</strong></div>
+            </div>
+            <div class="goal-track" role="progressbar" aria-label="Progresso da meta de likes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="goalTrack"><span id="goalFill"></span></div>
+            <p id="liveStatus" role="status" aria-live="polite">Cole o link da live para acompanhar.</p>
+            <div class="chat-picker">
+              <div class="chat-picker-heading">
+                <h2>Mensagens para destacar</h2>
+                <button type="button" class="button ghost" id="clearChatHighlightButton" hidden>Retirar destaque</button>
+              </div>
+              <p id="chatPickerStatus" role="status" aria-live="polite">Cole o link da live para selecionar mensagens.</p>
+              <div id="chatMessagesList" class="chat-messages-list"></div>
+            </div>
+            <div class="chat-frame" id="chatFrame"></div>
+            <a id="openChatLink" target="_blank" rel="noopener noreferrer" hidden>Abrir chat no YouTube</a>
+          </section>
           <div class="tips">
             <strong>Links da live</strong>
             <p>Use <code>/overlay.html</code> como Browser Source no OBS/vMix. O painel pode ficar aberto em <code>/control.html</code>.</p>
@@ -193,7 +267,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=11"></script>
-    <script src="control.js?v=11"></script>
+    <script src="shared.js?v=13"></script>
+    <script src="control.js?v=13"></script>
   </body>
 </html>

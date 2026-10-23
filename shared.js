@@ -2,15 +2,15 @@ const OVERLAY_STORAGE_KEY = "gc-overlay-state-v3";
 const OVERLAY_CHANNEL = "gc-overlay-live-updates";
 const OVERLAY_MEDIA_DB = "gc-overlay-media-v1";
 const OVERLAY_MEDIA_STORE = "media";
+let overlayAdminKey = "";
 
 const defaultOverlayState = {
-  gcTitle: "ANCELOTTI RENOVOU COM A SELECAO!",
-  gcSubtitle: "NOVO VINCULO DO TREINADOR VAI ATE A COPA DE 2030",
-  mainKicker: "PODE PINTAR ENTRE OS 26!",
-  mainSubtitle:
-    "A convocacao de Neymar para a Copa do Mundo ainda esta na pauta do tecnico.",
-  postAuthor: "Instagram",
-  postText: "Insira o print do post lateral ou use este campo como texto reserva.",
+  gcTitle: "",
+  gcSubtitle: "",
+  mainKicker: "",
+  mainSubtitle: "",
+  postAuthor: "",
+  postText: "",
   images: {
     leftTop: "",
     leftBottom: "",
@@ -30,6 +30,11 @@ const defaultOverlayState = {
   style: {
     gcTitleColor: "#151515",
     gcSubtitleColor: "#222222",
+    gcBgColor: "#f7f7f2",
+    gcBorderColor: "#12a7a6",
+    gcAccentColor: "#d9d316",
+    gcTitleBgColor: "#2854ff",
+    gcSubtitleBgColor: "#fff200",
     mainKickerColor: "#282828",
     mainKickerBg: "#ffffff",
     mainSubtitleColor: "#ffffff",
@@ -41,9 +46,12 @@ const defaultOverlayState = {
     mainKickerSize: 34,
     mainSubtitleSize: 15,
     postSize: 19,
+    logoSize: 100,
   },
   layout: {
     ratio: "landscape",
+    tarjaPreset: "classic",
+    presetColors: {},
     visible: {
       leftTop: true,
       leftBottom: true,
@@ -51,6 +59,15 @@ const defaultOverlayState = {
       post: true,
       logo: true,
     },
+  },
+  youtube: {
+    liveUrl: "",
+    likeGoal: 100,
+  },
+  chatHighlight: {
+    visible: false,
+    author: "",
+    text: "",
   },
 };
 
@@ -69,9 +86,10 @@ function cloneDefaultState() {
 
 function saveOverlayState(state) {
   const nextState = stripInlineMedia(mergeState(defaultOverlayState, state));
-  localStorage.setItem(OVERLAY_STORAGE_KEY, JSON.stringify(nextState));
+  try {
+    localStorage.setItem(OVERLAY_STORAGE_KEY, JSON.stringify(nextState));
+  } catch {}
   publishOverlayState(nextState);
-  syncOverlayStateToServer(nextState);
   return nextState;
 }
 
@@ -108,6 +126,14 @@ function mergeState(base, patch) {
         ...base.layout.visible,
         ...((patch.layout && patch.layout.visible) || {}),
       },
+    },
+    youtube: {
+      ...base.youtube,
+      ...(patch.youtube || {}),
+    },
+    chatHighlight: {
+      ...base.chatHighlight,
+      ...(patch.chatHighlight || {}),
     },
   };
 }
@@ -156,7 +182,7 @@ async function loadServerOverlayState() {
 }
 
 function syncOverlayStateToServer(state) {
-  requestJson("POST", "/state", state).catch(() => {});
+  return requestJson("POST", "/state", state);
 }
 
 function getOverlayAdminKey() {
@@ -164,12 +190,18 @@ function getOverlayAdminKey() {
     const params = new URLSearchParams(window.location.search);
     const keyFromUrl = params.get("key");
     if (keyFromUrl) {
-      localStorage.setItem("gc-overlay-admin-key", keyFromUrl);
+      overlayAdminKey = keyFromUrl;
+      try {
+        localStorage.setItem("gc-overlay-admin-key", keyFromUrl);
+      } catch {}
+      params.delete("key");
+      const query = params.toString();
+      history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
       return keyFromUrl;
     }
-    return localStorage.getItem("gc-overlay-admin-key") || "";
+    return overlayAdminKey || localStorage.getItem("gc-overlay-admin-key") || "";
   } catch {
-    return "";
+    return overlayAdminKey;
   }
 }
 
@@ -183,7 +215,8 @@ function subscribeServerOverlayState(callback) {
     events.addEventListener("state", (event) => {
       try {
         lastState = event.data;
-        callback(mergeState(defaultOverlayState, JSON.parse(event.data)));
+        const state = JSON.parse(event.data);
+        callback(state ? mergeState(defaultOverlayState, state) : cloneDefaultState());
       } catch {}
     });
     events.onerror = () => {};
@@ -194,14 +227,14 @@ function subscribeServerOverlayState(callback) {
     try {
       const state = await requestJson("GET", `/state?ts=${Date.now()}`);
       const serialized = JSON.stringify(state);
-      if (state && serialized !== lastState) {
+      if (serialized !== lastState) {
         lastState = serialized;
-        callback(mergeState(defaultOverlayState, state));
+        callback(state ? mergeState(defaultOverlayState, state) : cloneDefaultState());
       }
     } catch {}
   };
 
-  const interval = setInterval(poll, 250);
+  const interval = setInterval(poll, 10000);
   poll();
 
   return () => {
@@ -264,31 +297,8 @@ function openOverlayMediaDb() {
 
 async function saveOverlayMedia(key, file) {
   const updatedAt = Date.now();
-  const mediaRef = `${key}:${updatedAt}:${file.name}`;
-
-  try {
-    await uploadMediaToServer(key, file, updatedAt);
-    return `/media/${encodeURIComponent(key)}?v=${updatedAt}`;
-  } catch {}
-
-  const db = await openOverlayMediaDb();
-  const record = {
-    key,
-    blob: file,
-    mimeType: file.type,
-    name: file.name,
-    updatedAt,
-  };
-
-  await new Promise((resolve, reject) => {
-    const transaction = db.transaction(OVERLAY_MEDIA_STORE, "readwrite");
-    transaction.objectStore(OVERLAY_MEDIA_STORE).put(record);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
-
-  db.close();
-  return mediaRef;
+  await uploadMediaToServer(key, file, updatedAt);
+  return `/media/${encodeURIComponent(key)}?v=${updatedAt}`;
 }
 
 function uploadMediaToServer(key, file, updatedAt) {

@@ -12,10 +12,13 @@ const MEDIA_DIR = path.join(DATA_DIR, "media");
 const STATE_FILE = path.join(DATA_DIR, "state.json");
 const MEDIA_META_FILE = path.join(DATA_DIR, "media.json");
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB || 250) * 1024 * 1024;
 
 const clients = new Set();
 const mediaMeta = new Map();
+const youtubeStatsCache = new Map();
+const youtubeChatCache = new Map();
 
 let overlayState = null;
 
@@ -50,8 +53,8 @@ async function bootstrap() {
   server.listen(PORT, HOST, () => {
     const localUrl = `http://127.0.0.1:${PORT}`;
     console.log(`GC Overlay server running on ${HOST}:${PORT}`);
-    console.log(`Control: ${localUrl}/control.html?v=11`);
-    console.log(`Overlay: ${localUrl}/overlay.html?v=11`);
+    console.log(`Control: ${localUrl}/control.html?v=13`);
+    console.log(`Overlay: ${localUrl}/overlay.html?v=13`);
   });
 }
 
@@ -66,6 +69,51 @@ async function handleRequest(request, response) {
 
     if (request.method === "GET" && requestUrl.pathname === "/state") {
       sendJson(response, overlayState);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/youtube/stats") {
+      if (!isAuthorized(request, requestUrl)) {
+        sendJson(response, { ok: false, error: "unauthorized" }, 401);
+        return;
+      }
+      if (!YOUTUBE_API_KEY) {
+        sendJson(response, { ok: false, error: "youtube_api_unconfigured" }, 503);
+        return;
+      }
+      const videoId = requestUrl.searchParams.get("videoId") || "";
+      if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+        sendJson(response, { ok: false, error: "invalid_video_id" }, 400);
+        return;
+      }
+      try {
+        const stats = await getYouTubeStats(videoId);
+        sendJson(response, stats);
+      } catch {
+        sendJson(response, { ok: false, error: "youtube_unavailable" }, 502);
+      }
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/youtube/chat") {
+      if (!isAuthorized(request, requestUrl)) {
+        sendJson(response, { ok: false, error: "unauthorized" }, 401);
+        return;
+      }
+      if (!YOUTUBE_API_KEY) {
+        sendJson(response, { ok: false, error: "youtube_api_unconfigured" }, 503);
+        return;
+      }
+      const videoId = requestUrl.searchParams.get("videoId") || "";
+      if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+        sendJson(response, { ok: false, error: "invalid_video_id" }, 400);
+        return;
+      }
+      try {
+        sendJson(response, await getYouTubeChat(videoId));
+      } catch {
+        sendJson(response, { ok: false, error: "youtube_unavailable" }, 502);
+      }
       return;
     }
 
@@ -88,14 +136,14 @@ async function handleRequest(request, response) {
         return;
       }
 
-      overlayState = null;
+      overlayState = {};
       mediaMeta.clear();
       await Promise.allSettled([
-        fsp.rm(STATE_FILE, { force: true }),
         fsp.rm(MEDIA_META_FILE, { force: true }),
         fsp.rm(MEDIA_DIR, { recursive: true, force: true }),
       ]);
       await fsp.mkdir(MEDIA_DIR, { recursive: true });
+      await writeJsonFile(STATE_FILE, overlayState);
       broadcastState();
       sendJson(response, { ok: true });
       return;
@@ -265,4 +313,87 @@ async function writeJsonFile(filePath, data) {
 
 function safeMediaKey(value) {
   return value.replace(/[^a-z0-9_-]/gi, "_").slice(0, 80) || "media";
+}
+
+async function getYouTubeStats(videoId) {
+  const cached = youtubeStatsCache.get(videoId);
+  if (cached && Date.now() - cached.cachedAt < 45000) return cached.data;
+
+  const videoData = await youtubeApiRequest("videos", {
+    part: "snippet,statistics,liveStreamingDetails",
+    id: videoId,
+  });
+  const video = videoData.items?.[0];
+  if (!video) throw new Error("video_not_found");
+
+  const channelData = await youtubeApiRequest("channels", {
+    part: "statistics",
+    id: video.snippet.channelId,
+  });
+  const channel = channelData.items?.[0];
+  const stats = {
+    videoId,
+    likes: video.statistics?.likeCount === undefined ? null : Number(video.statistics.likeCount),
+    subscribers: channel?.statistics?.hiddenSubscriberCount || channel?.statistics?.subscriberCount === undefined
+      ? null
+      : Number(channel.statistics.subscriberCount),
+    liveChatId: video.liveStreamingDetails?.activeLiveChatId || "",
+    updatedAt: new Date().toISOString(),
+  };
+  youtubeStatsCache.set(videoId, { data: stats, cachedAt: Date.now() });
+  return stats;
+}
+
+async function getYouTubeChat(videoId) {
+  const cached = youtubeChatCache.get(videoId);
+  if (cached && Date.now() < cached.refreshAt) return cached.data;
+
+  const { liveChatId } = await getYouTubeStats(videoId);
+  if (!liveChatId) {
+    const data = { live: false, messages: [], retryAfterMs: 30000 };
+    youtubeChatCache.set(videoId, { data, refreshAt: Date.now() + data.retryAfterMs });
+    return data;
+  }
+
+  const previous = cached?.liveChatId === liveChatId ? cached : null;
+  const params = {
+    liveChatId,
+    part: "snippet,authorDetails",
+    maxResults: "200",
+  };
+  if (previous?.nextPageToken) params.pageToken = previous.nextPageToken;
+  const response = await youtubeApiRequest("liveChat/messages", params);
+  const latestMessages = (response.items || [])
+    .filter((item) => item.snippet?.type === "textMessageEvent" && item.snippet.displayMessage)
+    .map((item) => ({
+      id: item.id,
+      author: String(item.authorDetails?.displayName || "Espectador").slice(0, 80),
+      text: String(item.snippet.displayMessage).slice(0, 500),
+    }));
+  const seen = new Set();
+  const messages = [...(previous?.data.messages || []), ...latestMessages]
+    .filter((message) => {
+      if (seen.has(message.id)) return false;
+      seen.add(message.id);
+      return true;
+    })
+    .slice(-40);
+  const retryAfterMs = Math.max(15000, Number(response.pollingIntervalMillis) || 20000);
+  const data = { live: true, messages, retryAfterMs };
+  youtubeChatCache.set(videoId, {
+    data,
+    liveChatId,
+    nextPageToken: response.nextPageToken,
+    refreshAt: Date.now() + retryAfterMs,
+  });
+  return data;
+}
+
+async function youtubeApiRequest(resource, params) {
+  const url = new URL(`https://www.googleapis.com/youtube/v3/${resource}`);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  url.searchParams.set("key", YOUTUBE_API_KEY);
+  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error("youtube_unavailable");
+  return response.json();
 }

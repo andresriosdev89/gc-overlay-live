@@ -1,7 +1,48 @@
+getOverlayAdminKey();
 let currentState = loadOverlayState();
+let saveRevision = 0;
+let savedRevision = 0;
+let saveTimer;
+let saveInProgress = false;
+let activeSavePromise = Promise.resolve();
+let isResetting = false;
+let activeVideoId = "";
+let lastLikes = null;
+let chatPollTimer;
 
 const form = document.getElementById("controlForm");
 const resetButton = document.getElementById("resetButton");
+const retryButton = document.getElementById("retryButton");
+const saveStatus = document.getElementById("saveStatus");
+const liveUrlInput = document.getElementById("liveUrlInput");
+const likeGoalInput = document.getElementById("likeGoalInput");
+const likeCount = document.getElementById("likeCount");
+const likeProgress = document.getElementById("likeProgress");
+const subscriberCount = document.getElementById("subscriberCount");
+const goalTrack = document.getElementById("goalTrack");
+const goalFill = document.getElementById("goalFill");
+const liveStatus = document.getElementById("liveStatus");
+const chatFrame = document.getElementById("chatFrame");
+const openChatLink = document.getElementById("openChatLink");
+const chatPicker = document.querySelector(".chat-picker");
+const chatPickerStatus = document.getElementById("chatPickerStatus");
+const chatMessagesList = document.getElementById("chatMessagesList");
+const clearChatHighlightButton = document.getElementById("clearChatHighlightButton");
+const tarjaPresetInput = document.getElementById("tarjaPresetInput");
+
+const tarjaColorKeys = [
+  "gcTitleColor", "gcSubtitleColor", "gcBgColor", "gcBorderColor",
+  "gcAccentColor", "gcTitleBgColor", "gcSubtitleBgColor",
+];
+
+const tarjaPalettes = {
+  classic: { gcTitleColor: "#151515", gcSubtitleColor: "#222222", gcBgColor: "#f7f7f2", gcBorderColor: "#12a7a6", gcAccentColor: "#d9d316", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+  cream: { gcTitleColor: "#30302e", gcSubtitleColor: "#30302e", gcBgColor: "#f7efd9", gcBorderColor: "#87c9e2", gcAccentColor: "#ffe300", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+  stadium: { gcTitleColor: "#ffffff", gcSubtitleColor: "#e3efff", gcBgColor: "#145ca6", gcBorderColor: "#eef8ff", gcAccentColor: "#0fe1ae", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+  frame: { gcTitleColor: "#171717", gcSubtitleColor: "#202020", gcBgColor: "#fffdf9", gcBorderColor: "#04aaa5", gcAccentColor: "#f5dd16", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+  night: { gcTitleColor: "#ffffff", gcSubtitleColor: "#d4e6ff", gcBgColor: "#07101f", gcBorderColor: "#24a5ff", gcAccentColor: "#365b99", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+  duotone: { gcTitleColor: "#ffffff", gcSubtitleColor: "#0a0a0a", gcBgColor: "#101015", gcBorderColor: "#ff006e", gcAccentColor: "#fff200", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
+};
 
 const textInputs = {
   gcTitle: document.getElementById("gcTitleInput"),
@@ -24,6 +65,11 @@ const fileInputs = {
 const styleInputs = {
   gcTitleColor: document.getElementById("gcTitleColorInput"),
   gcSubtitleColor: document.getElementById("gcSubtitleColorInput"),
+  gcBgColor: document.getElementById("gcBgColorInput"),
+  gcBorderColor: document.getElementById("gcBorderColorInput"),
+  gcAccentColor: document.getElementById("gcAccentColorInput"),
+  gcTitleBgColor: document.getElementById("gcTitleBgColorInput"),
+  gcSubtitleBgColor: document.getElementById("gcSubtitleBgColorInput"),
   mainKickerColor: document.getElementById("mainKickerColorInput"),
   mainKickerBg: document.getElementById("mainKickerBgInput"),
   mainSubtitleColor: document.getElementById("mainSubtitleColorInput"),
@@ -35,6 +81,7 @@ const styleInputs = {
   mainKickerSize: document.getElementById("mainKickerSizeInput"),
   mainSubtitleSize: document.getElementById("mainSubtitleSizeInput"),
   postSize: document.getElementById("postSizeInput"),
+  logoSize: document.getElementById("logoSizeInput"),
 };
 
 const styleValueLabels = {
@@ -43,6 +90,7 @@ const styleValueLabels = {
   mainKickerSize: document.getElementById("mainKickerSizeValue"),
   mainSubtitleSize: document.getElementById("mainSubtitleSizeValue"),
   postSize: document.getElementById("postSizeValue"),
+  logoSize: document.getElementById("logoSizeValue"),
 };
 
 const ratioInput = document.getElementById("ratioInput");
@@ -65,15 +113,21 @@ function hydrateForm(state) {
   });
   updateStyleValueLabels(state);
   ratioInput.value = state.layout.ratio;
+  tarjaPresetInput.value = state.layout.tarjaPreset;
   previewWindow.dataset.ratio = state.layout.ratio;
   Object.entries(visibleInputs).forEach(([key, input]) => {
     input.checked = state.layout.visible[key];
   });
+  liveUrlInput.value = state.youtube.liveUrl;
+  likeGoalInput.value = state.youtube.likeGoal;
+  fileInputs.gcBase.disabled = state.layout.tarjaPreset !== "classic";
+  renderChatHighlightControls();
+  updateLiveDashboard();
 }
 
 function updateStyleValueLabels(state) {
   Object.entries(styleValueLabels).forEach(([key, label]) => {
-    label.textContent = `${state.style[key]}px`;
+    label.textContent = key === "logoSize" ? `${state.style[key]}%` : `${state.style[key]}px`;
   });
 }
 
@@ -82,7 +136,7 @@ function updateTextState() {
   Object.entries(textInputs).forEach(([key, input]) => {
     patch[key] = input.value;
   });
-  currentState = saveOverlayState({ ...currentState, ...patch });
+  queueState({ ...currentState, ...patch });
 }
 
 function updateStyleState() {
@@ -90,8 +144,40 @@ function updateStyleState() {
   Object.entries(styleInputs).forEach(([key, input]) => {
     style[key] = input.type === "range" ? Number(input.value) : input.value;
   });
-  currentState = saveOverlayState({ ...currentState, style });
+  const presetColors = {
+    ...currentState.layout.presetColors,
+    [currentState.layout.tarjaPreset]: pickTarjaColors(style),
+  };
+  queueState({
+    ...currentState,
+    style,
+    layout: { ...currentState.layout, presetColors },
+  });
   updateStyleValueLabels(currentState);
+}
+
+function pickTarjaColors(style) {
+  return Object.fromEntries(tarjaColorKeys.map((key) => [key, style[key]]));
+}
+
+function updateTarjaPresetState() {
+  const preset = tarjaPresetInput.value;
+  const currentPreset = currentState.layout.tarjaPreset;
+  if (preset === currentPreset) return;
+  const presetColors = {
+    ...currentState.layout.presetColors,
+    [currentPreset]: pickTarjaColors(currentState.style),
+  };
+  const colors = presetColors[preset] || tarjaPalettes[preset];
+  queueState({
+    ...currentState,
+    style: { ...currentState.style, ...colors },
+    layout: { ...currentState.layout, tarjaPreset: preset, presetColors },
+  }, true);
+  tarjaColorKeys.forEach((key) => {
+    styleInputs[key].value = currentState.style[key];
+  });
+  fileInputs.gcBase.disabled = preset !== "classic";
 }
 
 function updateLayoutState() {
@@ -100,7 +186,7 @@ function updateLayoutState() {
     visible[key] = input.checked;
   });
 
-  currentState = saveOverlayState({
+  queueState({
     ...currentState,
     layout: {
       ...currentState.layout,
@@ -109,6 +195,46 @@ function updateLayoutState() {
     },
   });
   previewWindow.dataset.ratio = currentState.layout.ratio;
+}
+
+function setSaveStatus(message, kind = "neutral") {
+  saveStatus.textContent = message;
+  saveStatus.dataset.kind = kind;
+}
+
+function queueState(state, immediate = false) {
+  currentState = saveOverlayState(state);
+  saveRevision += 1;
+  retryButton.hidden = true;
+  setSaveStatus("Alterações pendentes...");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, immediate ? 0 : 400);
+}
+
+async function flushSave() {
+  if (isResetting || saveInProgress || saveRevision === savedRevision) return;
+  const revision = saveRevision;
+  const snapshot = currentState;
+  saveInProgress = true;
+  setSaveStatus("Salvando no servidor...");
+  try {
+    activeSavePromise = syncOverlayStateToServer(snapshot);
+    await activeSavePromise;
+    savedRevision = revision;
+    if (saveRevision === revision) {
+      retryButton.hidden = true;
+      setSaveStatus("Salvo no servidor.", "success");
+    }
+  } catch (error) {
+    retryButton.hidden = false;
+    setSaveStatus(error.message === "HTTP 401" ? "Acesso negado. Abra o painel com uma chave válida." : "Não foi possível salvar no servidor. O OBS pode estar desatualizado.", "error");
+  } finally {
+    saveInProgress = false;
+    if (!isResetting && saveRevision > revision) {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(flushSave, 0);
+    }
+  }
 }
 
 form.addEventListener("input", (event) => {
@@ -123,7 +249,9 @@ form.addEventListener("input", (event) => {
 });
 
 form.addEventListener("change", (event) => {
-  if (event.target === ratioInput || Object.values(visibleInputs).includes(event.target)) {
+  if (event.target === tarjaPresetInput) {
+    updateTarjaPresetState();
+  } else if (event.target === ratioInput || Object.values(visibleInputs).includes(event.target)) {
     updateLayoutState();
   }
 });
@@ -134,10 +262,11 @@ Object.entries(fileInputs).forEach(([key, input]) => {
     if (!file) return;
 
     input.disabled = true;
+    setSaveStatus("Enviando mídia...");
     try {
       const mediaRef = await saveOverlayMedia(key, file);
 
-      currentState = saveOverlayState({
+      queueState({
         ...currentState,
         images: {
           ...currentState.images,
@@ -147,7 +276,9 @@ Object.entries(fileInputs).forEach(([key, input]) => {
           ...currentState.mediaTypes,
           [key]: file.type.startsWith("video/") ? "video" : "image",
         },
-      });
+      }, true);
+    } catch (error) {
+      setSaveStatus(error.message === "HTTP 401" ? "Acesso negado para enviar mídia. Confira a chave do painel." : "Falha no envio da mídia. O arquivo anterior continua no overlay.", "error");
     } finally {
       input.disabled = false;
     }
@@ -155,12 +286,205 @@ Object.entries(fileInputs).forEach(([key, input]) => {
 });
 
 resetButton.addEventListener("click", async () => {
-  await clearOverlayMedia();
-  currentState = saveOverlayState(defaultOverlayState);
-  hydrateForm(currentState);
-  Object.values(fileInputs).forEach((input) => {
-    input.value = "";
-  });
+  if (!window.confirm("Resetar textos, configurações e mídias do overlay para todos os espectadores?")) return;
+  isResetting = true;
+  form.inert = true;
+  resetButton.disabled = true;
+  clearTimeout(saveTimer);
+  setSaveStatus("Resetando...");
+  try {
+    await activeSavePromise.catch(() => {});
+    await requestJson("POST", "/reset");
+    await clearOverlayMedia().catch(() => {});
+    currentState = saveOverlayState(cloneDefaultState());
+    saveRevision = 0;
+    savedRevision = 0;
+    hydrateForm(currentState);
+    Object.values(fileInputs).forEach((input) => {
+      input.value = "";
+    });
+    setSaveStatus("Overlay resetado.", "success");
+  } catch {
+    setSaveStatus("Não foi possível concluir o reset. Confira a conexão.", "error");
+  } finally {
+    isResetting = false;
+    form.inert = false;
+    resetButton.disabled = false;
+  }
 });
 
+retryButton.addEventListener("click", flushSave);
+
+clearChatHighlightButton.addEventListener("click", () => {
+  queueState({ ...currentState, chatHighlight: { ...currentState.chatHighlight, visible: false } }, true);
+  renderChatHighlightControls();
+});
+
+liveUrlInput.addEventListener("input", updateYouTubeState);
+likeGoalInput.addEventListener("input", updateYouTubeState);
+
+function updateYouTubeState() {
+  const likeGoal = Math.max(1, Number(likeGoalInput.value) || 1);
+  queueState({
+    ...currentState,
+    youtube: { liveUrl: liveUrlInput.value.trim(), likeGoal },
+  });
+  updateLiveDashboard();
+}
+
+function getYouTubeVideoId(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase();
+    let videoId = "";
+    if (host === "youtu.be" || host === "www.youtu.be") {
+      videoId = url.pathname.split("/")[1];
+    } else if (["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)) {
+      videoId = url.pathname === "/watch" ? url.searchParams.get("v") : url.pathname.match(/^\/(?:live|embed)\/([^/]+)/)?.[1];
+    }
+    return /^[a-zA-Z0-9_-]{11}$/.test(videoId || "") ? videoId : "";
+  } catch {
+    return "";
+  }
+}
+
+function updateLiveDashboard() {
+  const videoId = getYouTubeVideoId(currentState.youtube.liveUrl);
+  const goal = Math.max(1, Number(currentState.youtube.likeGoal) || 1);
+  likeProgress.textContent = goal.toLocaleString("pt-BR");
+  if (videoId !== activeVideoId) lastLikes = null;
+  updateGoalProgress(lastLikes);
+  if (videoId === activeVideoId) return;
+  activeVideoId = videoId;
+  likeCount.textContent = "—";
+  subscriberCount.textContent = "—";
+  chatFrame.replaceChildren();
+  openChatLink.hidden = true;
+  chatMessagesList.replaceChildren();
+  clearTimeout(chatPollTimer);
+
+  if (!videoId) {
+    liveStatus.textContent = currentState.youtube.liveUrl ? "Use um link válido de live do YouTube." : "Cole o link da live para acompanhar.";
+    chatPickerStatus.textContent = "Cole um link válido da live para selecionar mensagens.";
+    return;
+  }
+
+  const chatUrl = new URL("https://www.youtube.com/live_chat");
+  chatUrl.searchParams.set("v", videoId);
+  chatUrl.searchParams.set("embed_domain", window.location.hostname);
+  const iframe = document.createElement("iframe");
+  iframe.title = "Chat ao vivo do YouTube";
+  iframe.loading = "lazy";
+  iframe.referrerPolicy = "strict-origin";
+  iframe.src = chatUrl.toString();
+  chatFrame.append(iframe);
+  openChatLink.href = `https://www.youtube.com/live_chat?v=${encodeURIComponent(videoId)}`;
+  openChatLink.textContent = "Abrir chat no YouTube";
+  openChatLink.hidden = false;
+  refreshYouTubeStats();
+  refreshYouTubeChat();
+}
+
+function renderChatHighlightControls() {
+  clearChatHighlightButton.hidden = !currentState.chatHighlight.visible;
+}
+
+async function refreshYouTubeChat() {
+  const videoId = activeVideoId;
+  if (!videoId) return;
+  chatPickerStatus.textContent = "Buscando mensagens recentes do chat...";
+  let retryAfterMs = 30000;
+  try {
+    const chat = await requestJson("GET", `/youtube/chat?videoId=${encodeURIComponent(videoId)}`);
+    if (videoId !== activeVideoId) return;
+    retryAfterMs = Math.max(15000, Number(chat.retryAfterMs) || 20000);
+    chatMessagesList.replaceChildren();
+    if (!chat.live) {
+      chatPickerStatus.textContent = "A live ainda não está ativa ou o chat está desativado.";
+    } else if (!chat.messages.length) {
+      chatPickerStatus.textContent = "Nenhuma mensagem de texto recente. Aguardando o chat...";
+    } else {
+      chatPickerStatus.textContent = `Selecione uma das ${chat.messages.length} mensagens recentes para destacá-la no overlay.`;
+      chat.messages.slice().reverse().forEach((message) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "chat-message-button";
+        const author = document.createElement("strong");
+        author.textContent = message.author;
+        const content = document.createElement("span");
+        content.textContent = message.text;
+        button.append(author, content);
+        button.addEventListener("click", () => {
+          queueState({
+            ...currentState,
+            chatHighlight: { visible: true, author: message.author, text: message.text },
+          }, true);
+          renderChatHighlightControls();
+        });
+        chatMessagesList.append(button);
+      });
+    }
+  } catch (error) {
+    if (videoId !== activeVideoId) return;
+    chatPickerStatus.textContent = error.message === "HTTP 503"
+      ? "Para selecionar mensagens, configure a API do YouTube no servidor."
+      : "Não foi possível ler o chat agora. Nova tentativa automática em instantes.";
+  } finally {
+    if (videoId === activeVideoId) chatPollTimer = setTimeout(refreshYouTubeChat, retryAfterMs);
+  }
+}
+
+async function refreshYouTubeStats() {
+  const videoId = activeVideoId;
+  if (!videoId) return;
+  liveStatus.textContent = "Atualizando dados do YouTube...";
+  try {
+    const stats = await requestJson("GET", `/youtube/stats?videoId=${encodeURIComponent(videoId)}`);
+    if (videoId !== activeVideoId) return;
+    const likes = stats.likes === null ? null : Number(stats.likes);
+    const subscribers = stats.subscribers === null ? null : Number(stats.subscribers);
+    lastLikes = Number.isFinite(likes) ? likes : null;
+    likeCount.textContent = Number.isFinite(likes) ? likes.toLocaleString("pt-BR") : "—";
+    subscriberCount.textContent = Number.isFinite(subscribers) ? `≈ ${subscribers.toLocaleString("pt-BR")}` : "—";
+    updateGoalProgress(lastLikes);
+    liveStatus.textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Inscritos são aproximados pelo YouTube.`;
+  } catch (error) {
+    if (videoId !== activeVideoId) return;
+    liveStatus.textContent = error.message === "HTTP 503" ? "Contadores aguardando a configuração da API do YouTube." : "Não foi possível atualizar os contadores do YouTube.";
+  }
+}
+
+function updateGoalProgress(likes) {
+  const goal = Math.max(1, Number(currentState.youtube.likeGoal) || 1);
+  const percent = Number.isFinite(likes) ? Math.min(100, Math.round(likes / goal * 100)) : 0;
+  goalFill.style.width = `${percent}%`;
+  goalTrack.setAttribute("aria-valuenow", String(percent));
+}
+
+form.inert = true;
+chatPicker.inert = true;
+resetButton.disabled = true;
 hydrateForm(currentState);
+
+requestJson("GET", `/state?ts=${Date.now()}`)
+  .then((serverState) => {
+    if (serverState) {
+      currentState = saveOverlayState(mergeState(defaultOverlayState, serverState));
+      hydrateForm(currentState);
+      setSaveStatus("Último conteúdo carregado do servidor.", "success");
+    } else if (localStorage.getItem(OVERLAY_STORAGE_KEY)) {
+      queueState(currentState, true);
+    } else {
+      setSaveStatus("Pronto para editar.", "success");
+    }
+  })
+  .catch(() => {
+    setSaveStatus("Servidor indisponível. Alterações locais serão enviadas quando você editar e tentar salvar.", "error");
+  })
+  .finally(() => {
+    form.inert = false;
+    chatPicker.inert = false;
+    resetButton.disabled = false;
+  });
+
+setInterval(refreshYouTubeStats, 45000);

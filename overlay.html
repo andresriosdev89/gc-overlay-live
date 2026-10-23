@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>GC Overlay - Live</title>
-    <link rel="stylesheet" href="styles.css?v=11" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body class="overlay-body">
     <main class="broadcast-frame" id="overlayRoot">
@@ -26,10 +26,8 @@
           <img id="mainImage" alt="" />
           <video id="mainVideo" muted loop playsinline preload="metadata"></video>
           <div class="story-caption">
-            <p id="mainKicker">PODE PINTAR ENTRE OS 26!</p>
-            <p id="mainSubtitle">
-              A convocacao de Neymar para a Copa do Mundo ainda esta na pauta do tecnico.
-            </p>
+            <p id="mainKicker"></p>
+            <p id="mainSubtitle"></p>
           </div>
         </section>
 
@@ -37,13 +35,17 @@
           <img id="postImage" alt="" />
           <video id="postVideo" muted loop playsinline preload="metadata"></video>
           <div class="social-fallback">
-            <strong id="postAuthor">Instagram</strong>
-            <p id="postText">
-              Use o painel de controle para inserir o print do post ou escrever o texto aqui.
-            </p>
+            <strong id="postAuthor"></strong>
+            <p id="postText"></p>
           </div>
         </section>
       </div>
+
+      <section class="chat-highlight" id="chatHighlight" hidden>
+        <div class="chat-highlight-heading">CHAT EM DESTAQUE</div>
+        <strong id="chatHighlightAuthor"></strong>
+        <p id="chatHighlightText"></p>
+      </section>
 
       <section class="lower-third" id="lowerThird">
         <div class="logo-box">
@@ -51,13 +53,13 @@
           <span class="placeholder">Logo</span>
         </div>
         <div class="gc-text">
-          <h1 id="gcTitle">ANCELOTTI RENOVOU COM A SELECAO!</h1>
-          <p id="gcSubtitle">NOVO VINCULO DO TREINADOR VAI ATE A COPA DE 2030</p>
+          <h1 id="gcTitle"></h1>
+          <p id="gcSubtitle"></p>
         </div>
       </section>
     </main>
 
-    <script src="shared.js?v=11"></script>
-    <script src="overlay.js?v=11"></script>
+    <script src="shared.js?v=13"></script>
+    <script src="overlay.js?v=13"></script>
   </body>
 </html>

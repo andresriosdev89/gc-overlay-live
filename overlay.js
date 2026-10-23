@@ -21,10 +21,18 @@ const videoBindings = {
 };
 
 const lowerThird = document.getElementById("lowerThird");
+const chatHighlight = document.getElementById("chatHighlight");
+const chatHighlightAuthor = document.getElementById("chatHighlightAuthor");
+const chatHighlightText = document.getElementById("chatHighlightText");
+const gcText = document.querySelector(".gc-text");
+const storyCaption = document.querySelector(".story-caption");
+const postFallback = document.querySelector(".social-fallback");
 const overlayRoot = document.getElementById("overlayRoot");
 const mediaGrid = document.getElementById("mediaGrid");
 const mediaUrls = new Map();
 const mediaRenderTokens = new Map();
+let currentTextStyle = defaultOverlayState.style;
+let textScale = 1;
 
 const windowBindings = {
   leftTop: document.getElementById("leftTopCard"),
@@ -36,6 +44,11 @@ const windowBindings = {
 const styleSetters = {
   gcTitleColor: (value) => textBindings.gcTitle.style.color = value,
   gcSubtitleColor: (value) => textBindings.gcSubtitle.style.color = value,
+  gcBgColor: (value) => lowerThird.style.setProperty("--gc-bg-color", value),
+  gcBorderColor: (value) => lowerThird.style.setProperty("--gc-border-color", value),
+  gcAccentColor: (value) => lowerThird.style.setProperty("--gc-accent-color", value),
+  gcTitleBgColor: (value) => lowerThird.style.setProperty("--gc-title-bg-color", value),
+  gcSubtitleBgColor: (value) => lowerThird.style.setProperty("--gc-subtitle-bg-color", value),
   mainKickerColor: (value) => textBindings.mainKicker.style.color = value,
   mainKickerBg: (value) => textBindings.mainKicker.style.backgroundColor = withAlpha(value, 0.92),
   mainSubtitleColor: (value) => textBindings.mainSubtitle.style.color = value,
@@ -45,17 +58,19 @@ const styleSetters = {
     textBindings.postText.style.color = value;
   },
   postBgColor: (value) => document.querySelector(".social-fallback").style.backgroundColor = value,
-  gcTitleSize: (value) => textBindings.gcTitle.style.fontSize = `${value}px`,
-  gcSubtitleSize: (value) => textBindings.gcSubtitle.style.fontSize = `${value}px`,
-  mainKickerSize: (value) => textBindings.mainKicker.style.fontSize = `${value}px`,
-  mainSubtitleSize: (value) => textBindings.mainSubtitle.style.fontSize = `${value}px`,
+  gcTitleSize: (value) => textBindings.gcTitle.style.fontSize = `${Number(value) * textScale}px`,
+  gcSubtitleSize: (value) => textBindings.gcSubtitle.style.fontSize = `${Number(value) * textScale}px`,
+  mainKickerSize: (value) => textBindings.mainKicker.style.fontSize = `${Number(value) * textScale}px`,
+  mainSubtitleSize: (value) => textBindings.mainSubtitle.style.fontSize = `${Number(value) * textScale}px`,
   postSize: (value) => {
-    textBindings.postAuthor.style.fontSize = `${Number(value) + 4}px`;
-    textBindings.postText.style.fontSize = `${value}px`;
+    textBindings.postAuthor.style.fontSize = `${(Number(value) + 4) * textScale}px`;
+    textBindings.postText.style.fontSize = `${Number(value) * textScale}px`;
   },
+  logoSize: (value) => lowerThird.style.setProperty("--logo-scale", String(Number(value) / 100)),
 };
 
 function renderOverlay(state) {
+  currentTextStyle = state.style;
   Object.entries(textBindings).forEach(([key, element]) => {
     element.textContent = state[key] || defaultOverlayState[key];
   });
@@ -66,8 +81,77 @@ function renderOverlay(state) {
 
   renderLowerThirdBase(state);
 
-  applyTextStyle(state.style);
   applyLayout(state.layout);
+  applyTextStyle(state.style);
+  renderChatHighlight(state.chatHighlight, state.style, state.layout.tarjaPreset);
+  fitOverlayText();
+}
+
+function renderChatHighlight(highlight, style, preset) {
+  chatHighlight.hidden = !highlight?.visible || !highlight.text;
+  if (chatHighlight.hidden) return;
+  chatHighlightAuthor.textContent = highlight.author || "Espectador";
+  chatHighlightText.textContent = highlight.text;
+  chatHighlight.style.setProperty("--chat-accent-color", style.gcAccentColor);
+  chatHighlight.style.setProperty("--chat-border-color", style.gcBorderColor);
+  chatHighlight.style.setProperty("--chat-bg-color", style.gcBgColor);
+  chatHighlight.style.setProperty("--chat-title-color", style.gcTitleColor);
+  chatHighlight.style.setProperty("--chat-text-color", preset === "duotone" ? style.gcTitleColor : style.gcSubtitleColor);
+}
+
+function fitOverlayText() {
+  fitLowerThirdText();
+  fitMainCaption();
+  fitPostText();
+}
+
+function fitLowerThirdText() {
+  let titleSize = Number(currentTextStyle.gcTitleSize) * textScale;
+  let subtitleSize = Number(currentTextStyle.gcSubtitleSize) * textScale;
+  textBindings.gcTitle.style.fontSize = `${titleSize}px`;
+  textBindings.gcSubtitle.style.fontSize = `${subtitleSize}px`;
+  for (let attempt = 0; attempt < 24 && lowerThirdTextOverflows(); attempt += 1) {
+    if (titleSize <= 16 * textScale && subtitleSize <= 10 * textScale) break;
+    titleSize = Math.max(16 * textScale, titleSize * 0.9);
+    subtitleSize = Math.max(10 * textScale, subtitleSize * 0.9);
+    textBindings.gcTitle.style.fontSize = `${titleSize}px`;
+    textBindings.gcSubtitle.style.fontSize = `${subtitleSize}px`;
+  }
+}
+
+function lowerThirdTextOverflows() {
+  if (gcText.scrollHeight > gcText.clientHeight + 1) return true;
+  if (lowerThird.dataset.preset !== "duotone") return false;
+  return textBindings.gcTitle.scrollHeight > textBindings.gcTitle.clientHeight + 1 ||
+    textBindings.gcSubtitle.scrollHeight > textBindings.gcSubtitle.clientHeight + 1;
+}
+
+function fitMainCaption() {
+  let kickerSize = Number(currentTextStyle.mainKickerSize) * textScale;
+  let subtitleSize = Number(currentTextStyle.mainSubtitleSize) * textScale;
+  textBindings.mainKicker.style.fontSize = `${kickerSize}px`;
+  textBindings.mainSubtitle.style.fontSize = `${subtitleSize}px`;
+  for (let attempt = 0; attempt < 24 && storyCaption.scrollHeight > storyCaption.clientHeight + 1; attempt += 1) {
+    if (kickerSize <= 14 * textScale && subtitleSize <= 8 * textScale) break;
+    kickerSize = Math.max(14 * textScale, kickerSize * 0.9);
+    subtitleSize = Math.max(8 * textScale, subtitleSize * 0.9);
+    textBindings.mainKicker.style.fontSize = `${kickerSize}px`;
+    textBindings.mainSubtitle.style.fontSize = `${subtitleSize}px`;
+  }
+}
+
+function fitPostText() {
+  let authorSize = (Number(currentTextStyle.postSize) + 4) * textScale;
+  let bodySize = Number(currentTextStyle.postSize) * textScale;
+  textBindings.postAuthor.style.fontSize = `${authorSize}px`;
+  textBindings.postText.style.fontSize = `${bodySize}px`;
+  for (let attempt = 0; attempt < 24 && postFallback.scrollHeight > postFallback.clientHeight + 1; attempt += 1) {
+    if (authorSize <= 12 * textScale && bodySize <= 10 * textScale) break;
+    authorSize = Math.max(12 * textScale, authorSize * 0.9);
+    bodySize = Math.max(10 * textScale, bodySize * 0.9);
+    textBindings.postAuthor.style.fontSize = `${authorSize}px`;
+    textBindings.postText.style.fontSize = `${bodySize}px`;
+  }
 }
 
 function renderMedia(key, image, state) {
@@ -137,10 +221,11 @@ function clearVideo(video) {
 
 function renderLowerThirdBase(state) {
   const sourceRef = state.images.gcBase;
-  const token = `gcBase:${sourceRef}`;
+  const preset = state.layout.tarjaPreset || "classic";
+  const token = `gcBase:${preset}:${sourceRef}`;
   mediaRenderTokens.set("gcBase", token);
 
-  if (!sourceRef) {
+  if (!sourceRef || preset !== "classic") {
     lowerThird.style.backgroundImage = "";
     return;
   }
@@ -180,6 +265,7 @@ function isDirectMediaUrl(value) {
 }
 
 function applyTextStyle(style) {
+  textScale = Math.max(0.1, overlayRoot.clientWidth / (overlayRoot.dataset.ratio === "landscape" ? 1920 : 1080));
   Object.entries(styleSetters).forEach(([key, setter]) => {
     setter(style[key]);
   });
@@ -193,6 +279,7 @@ function applyLayout(layout) {
 
   overlayRoot.dataset.ratio = layout.ratio;
   overlayRoot.dataset.windowCount = String(activeWindows.length);
+  lowerThird.dataset.preset = layout.tarjaPreset || "classic";
 
   Object.entries(windowBindings).forEach(([key, element]) => {
     element.hidden = !visible[key];
@@ -279,3 +366,7 @@ loadServerOverlayState().then((serverState) => {
 });
 subscribeOverlayState(renderOverlay);
 subscribeServerOverlayState(renderOverlay);
+window.addEventListener("resize", () => {
+  applyTextStyle(currentTextStyle);
+  fitOverlayText();
+});

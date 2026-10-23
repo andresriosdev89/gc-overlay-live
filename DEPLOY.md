@@ -9,8 +9,8 @@ npm start
 
 Links locais:
 
-- Painel: `http://127.0.0.1:5173/control.html?v=11`
-- Overlay: `http://127.0.0.1:5173/overlay.html?v=11`
+- Painel: `http://127.0.0.1:5173/control.html?v=13`
+- Overlay: `http://127.0.0.1:5173/overlay.html?v=13`
 
 ## Colocar publico
 
@@ -23,6 +23,7 @@ Variaveis importantes:
 - `ADMIN_KEY`: senha do painel. Se preencher, abra o painel com `?key=SUA_CHAVE`.
 - `DATA_DIR`: pasta de dados persistentes. Padrao: `./data`.
 - `MAX_UPLOAD_MB`: limite de upload. Padrao: `250`.
+- `YOUTUBE_API_KEY`: chave de API do Google Cloud com YouTube Data API v3 habilitada para consultar likes, inscritos e mensagens do chat publico. Configure no ambiente do servidor, nunca no navegador ou no repositorio. A leitura do chat consome cota da API; o servidor respeita o intervalo de consulta indicado pelo YouTube.
 
 No plano gratis do Render, o app funciona, mas arquivos enviados e estado podem resetar quando o servico dormir ou reiniciar. Para manter tudo salvo permanentemente no Render, e necessario adicionar disco persistente, que pode exigir cartao.
 
@@ -30,8 +31,8 @@ No plano gratis do Render, o app funciona, mas arquivos enviados e estado podem 
 
 Troque `https://seu-dominio.com` pelo dominio do deploy:
 
-- Painel protegido: `https://seu-dominio.com/control.html?v=11&key=SUA_CHAVE`
-- Overlay publico: `https://seu-dominio.com/overlay.html?v=11`
+- Painel protegido: `https://seu-dominio.com/control.html?v=13&key=SUA_CHAVE`
+- Overlay publico: `https://seu-dominio.com/overlay.html?v=13`
 - Reset protegido: `https://seu-dominio.com/cache-reset.html?key=SUA_CHAVE`
 
 ## Render gratis
