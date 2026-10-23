@@ -61,6 +61,9 @@ const defaultOverlayState = {
     likeX: 7,
     likeY: 4,
     likeSize: 100,
+    subscriberX: 7,
+    subscriberY: 20,
+    subscriberSize: 100,
   },
   layout: {
     ratio: "landscape",
@@ -72,6 +75,7 @@ const defaultOverlayState = {
       main: true,
       post: true,
       logo: true,
+      subscribers: true,
     },
   },
   youtube: {

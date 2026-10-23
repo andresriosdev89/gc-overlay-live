@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Painel do GC Overlay</title>
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=19" />
   </head>
   <body class="control-body">
     <main class="control-shell">
@@ -18,7 +18,7 @@
           <p class="save-status" id="saveStatus" role="status" aria-live="polite">Carregando conteúdo...</p>
         </div>
         <nav class="header-actions">
-          <a class="button ghost" href="overlay.html?v=18" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="overlay.html?v=19" target="_blank" rel="noreferrer">Abrir overlay</a>
           <a class="button ghost" href="#livePanel">Acompanhar live</a>
           <button class="button ghost" id="retryButton" type="button" hidden>Tentar salvar</button>
           <button class="button danger" id="resetButton" type="button">Resetar</button>
@@ -138,6 +138,29 @@
           </fieldset>
 
           <fieldset>
+            <legend>Inscritos no overlay</legend>
+            <div class="switch-grid">
+              <label>
+                <input type="checkbox" id="subscribersVisibleInput" />
+                Mostrar inscritos
+              </label>
+            </div>
+            <p class="field-help">Mostra os inscritos do canal da live pelo YouTube. Arraste o contador na prévia ou ajuste abaixo; ele não move a meta de likes nem a tarja.</p>
+            <label class="range-control">
+              <span>Tamanho do contador <strong id="subscriberSizeValue"></strong></span>
+              <input type="range" id="subscriberSizeInput" min="50" max="200" step="5" />
+            </label>
+            <label class="range-control">
+              <span>Horizontal <strong id="subscriberXValue"></strong></span>
+              <input type="range" id="subscriberXInput" min="0" max="100" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Vertical <strong id="subscriberYValue"></strong></span>
+              <input type="range" id="subscriberYInput" min="0" max="100" step="1" />
+            </label>
+          </fieldset>
+
+          <fieldset>
             <legend>Logo livre sobre a tarja</legend>
             <div class="switch-grid">
               <label>
@@ -167,7 +190,7 @@
 
         <aside class="preview-panel">
           <div class="preview-window">
-            <iframe title="Preview do overlay" id="overlayPreview" src="overlay.html?v=18"></iframe>
+            <iframe title="Preview do overlay" id="overlayPreview" src="overlay.html?v=19"></iframe>
           </div>
           <section class="live-panel" id="livePanel" aria-label="Acompanhamento da live">
             <div class="live-stats">
@@ -196,7 +219,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=18"></script>
-    <script src="control.js?v=18"></script>
+    <script src="shared.js?v=19"></script>
+    <script src="control.js?v=19"></script>
   </body>
 </html>

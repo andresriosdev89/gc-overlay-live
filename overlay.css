@@ -66,6 +66,87 @@ body {
   cursor: grabbing;
 }
 
+.subscriber-badge {
+  --subscriber-surface: rgba(16, 35, 44, 0.94);
+  --subscriber-accent: #55e5c9;
+  --subscriber-title: #f4ffff;
+  --subscriber-subtitle: #c4e8e4;
+  position: absolute;
+  z-index: 3;
+  transform-origin: top left;
+  top: 20%;
+  left: 4%;
+  width: min(30%, 540px);
+  min-height: clamp(72px, 8vh, 100px);
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1vw, 20px);
+  padding: clamp(10px, 0.9vw, 18px);
+  border: 1px solid var(--subscriber-accent);
+  border-radius: clamp(12px, 1vw, 22px);
+  background: var(--subscriber-surface);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--subscriber-title);
+}
+
+.subscriber-badge[hidden] {
+  display: none;
+}
+
+.subscriber-badge.editable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.subscriber-badge.editable.dragging {
+  cursor: grabbing;
+}
+
+.subscriber-badge-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: clamp(52px, 5vw, 88px);
+  aspect-ratio: 1;
+  border-radius: clamp(8px, 0.7vw, 14px);
+  background: var(--subscriber-accent);
+  color: #10232c;
+  font-size: clamp(15px, 1.25vw, 23px);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+}
+
+.subscriber-badge-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.subscriber-badge-copy > span {
+  color: var(--subscriber-subtitle);
+  font-size: clamp(9px, 0.72vw, 14px);
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.subscriber-badge-copy strong {
+  font-size: clamp(20px, 1.9vw, 36px);
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.subscriber-badge-copy small {
+  overflow: hidden;
+  color: var(--subscriber-subtitle);
+  font-size: clamp(10px, 0.78vw, 15px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .like-bar-brand {
   display: grid;
   place-items: center;
@@ -461,6 +542,10 @@ body {
 @media (max-aspect-ratio: 4/5) {
   .like-bar {
     width: 94%;
+  }
+
+  .subscriber-badge {
+    width: 75%;
   }
 
   .lower-third {

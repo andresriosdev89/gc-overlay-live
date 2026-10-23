@@ -54,8 +54,8 @@ async function bootstrap() {
   server.listen(PORT, HOST, () => {
     const localUrl = `http://127.0.0.1:${PORT}`;
     console.log(`GC Overlay server running on ${HOST}:${PORT}`);
-    console.log(`Control: ${localUrl}/control.html?v=18`);
-    console.log(`Overlay: ${localUrl}/overlay.html?v=18`);
+    console.log(`Control: ${localUrl}/control.html?v=19`);
+    console.log(`Overlay: ${localUrl}/overlay.html?v=19`);
   });
 }
 
@@ -90,6 +90,25 @@ async function handleRequest(request, response) {
           return;
         }
         sendJson(response, { ok: true, likes: stats.likes, ...calculateLikeGoal(stats.likes, overlayState.youtube) });
+      } catch (error) {
+        sendJson(response, { ok: false, error: error.code || "youtube_unavailable" }, 502);
+      }
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/youtube/subscribers") {
+      const videoId = getYouTubeVideoId(overlayState?.youtube?.liveUrl || "");
+      if (!videoId) {
+        sendJson(response, { ok: false, error: "live_not_configured" });
+        return;
+      }
+      if (!YOUTUBE_API_KEY) {
+        sendJson(response, { ok: false, error: "youtube_api_unconfigured" }, 503);
+        return;
+      }
+      try {
+        const stats = await getYouTubeStats(videoId);
+        sendJson(response, { ok: true, subscribers: stats.subscribers, channelTitle: stats.channelTitle });
       } catch (error) {
         sendJson(response, { ok: false, error: error.code || "youtube_unavailable" }, 502);
       }
@@ -408,6 +427,7 @@ async function fetchYouTubeStats(videoId) {
   const stats = {
     videoId,
     likes: video.statistics?.likeCount === undefined ? null : Number(video.statistics.likeCount),
+    channelTitle: String(video.snippet?.channelTitle || "").slice(0, 80),
     subscribers: channel?.statistics?.hiddenSubscriberCount || channel?.statistics?.subscriberCount === undefined
       ? null
       : Number(channel.statistics.subscriberCount),

@@ -10,6 +10,9 @@ const overlayLikeCount = document.getElementById("overlayLikeCount");
 const overlayLikeGoal = document.getElementById("overlayLikeGoal");
 const overlayLikeFill = document.getElementById("overlayLikeFill");
 const likeCelebration = document.getElementById("likeCelebration");
+const subscriberBadge = document.getElementById("subscriberBadge");
+const overlaySubscriberCount = document.getElementById("overlaySubscriberCount");
+const overlaySubscriberChannel = document.getElementById("overlaySubscriberChannel");
 const chatHighlight = document.getElementById("chatHighlight");
 const chatHighlightAuthor = document.getElementById("chatHighlightAuthor");
 const chatHighlightText = document.getElementById("chatHighlightText");
@@ -21,6 +24,8 @@ let logoObjectUrl = "";
 let activeLikeSignature = "";
 let lastGoalVersion = null;
 let likePollTimer;
+let activeSubscriberUrl = "";
+let subscriberPollTimer;
 let celebrationTimer;
 
 function renderOverlay(state) {
@@ -53,6 +58,11 @@ function renderOverlay(state) {
   likeBar.style.setProperty("--like-accent", style.gcAccentColor);
   likeBar.style.setProperty("--like-title", style.gcTitleColor);
   likeBar.style.setProperty("--like-subtitle", style.gcSubtitleColor);
+  subscriberBadge.style.setProperty("--subscriber-surface", withAlpha(style.gcBgColor, 0.94));
+  subscriberBadge.style.setProperty("--subscriber-accent", style.gcAccentColor);
+  subscriberBadge.style.setProperty("--subscriber-title", style.gcTitleColor);
+  subscriberBadge.style.setProperty("--subscriber-subtitle", style.gcSubtitleColor);
+  subscriberBadge.hidden = !state.youtube?.liveUrl || !state.layout.visible.subscribers;
 
   const likeSignature = `${state.youtube?.liveUrl || ""}:${state.youtube?.likeGoal}:${state.youtube?.likeGoalStep}`;
   if (likeSignature !== activeLikeSignature) {
@@ -66,31 +76,40 @@ function renderOverlay(state) {
     if (state.youtube?.liveUrl) refreshLikeGoal();
   }
 
-  positionLikeBar(style);
+  if ((state.youtube?.liveUrl || "") !== activeSubscriberUrl) {
+    activeSubscriberUrl = state.youtube?.liveUrl || "";
+    clearTimeout(subscriberPollTimer);
+    overlaySubscriberCount.textContent = "—";
+    overlaySubscriberChannel.textContent = "";
+    if (activeSubscriberUrl) refreshSubscribers();
+  }
+
+  positionCounter(likeBar, style.likeSize, style.likeX, style.likeY);
+  positionCounter(subscriberBadge, style.subscriberSize, style.subscriberX, style.subscriberY);
 
   const textScale = Math.max(0.1, overlayRoot.clientWidth / 1920);
   fitLowerThirdText(style, textScale);
   renderChatHighlight(state.chatHighlight, style, preset);
 }
 
-function positionLikeBar(style) {
-  const requestedScale = Math.max(0.5, Math.min(2, (Number(style.likeSize) || 100) / 100));
-  const baseWidth = likeBar.offsetWidth;
-  const baseHeight = likeBar.offsetHeight;
+function positionCounter(counterElement, size, horizontal, vertical) {
+  const requestedScale = Math.max(0.5, Math.min(2, (Number(size) || 100) / 100));
+  const baseWidth = counterElement.offsetWidth;
+  const baseHeight = counterElement.offsetHeight;
   const scale = Math.min(
     requestedScale,
     baseWidth ? overlayRoot.clientWidth / baseWidth : requestedScale,
     baseHeight ? overlayRoot.clientHeight / baseHeight : requestedScale,
   );
-  likeBar.style.transform = `scale(${scale})`;
-  if (likeBar.hidden) return;
-  const barBounds = likeBar.getBoundingClientRect();
-  const travelX = Math.max(0, overlayRoot.clientWidth - barBounds.width);
-  const travelY = Math.max(0, overlayRoot.clientHeight - barBounds.height);
-  const likeX = Math.max(0, Math.min(100, Number(style.likeX) || 0));
-  const likeY = Math.max(0, Math.min(100, Number(style.likeY) || 0));
-  likeBar.style.left = `${travelX * likeX / 100}px`;
-  likeBar.style.top = `${travelY * likeY / 100}px`;
+  counterElement.style.transform = `scale(${scale})`;
+  if (counterElement.hidden) return;
+  const counterBounds = counterElement.getBoundingClientRect();
+  const travelX = Math.max(0, overlayRoot.clientWidth - counterBounds.width);
+  const travelY = Math.max(0, overlayRoot.clientHeight - counterBounds.height);
+  const positionX = Math.max(0, Math.min(100, Number(horizontal) || 0));
+  const positionY = Math.max(0, Math.min(100, Number(vertical) || 0));
+  counterElement.style.left = `${travelX * positionX / 100}px`;
+  counterElement.style.top = `${travelY * positionY / 100}px`;
 }
 
 function fitLowerThirdText(style, textScale) {
@@ -146,7 +165,7 @@ async function refreshLikeGoal() {
       return;
     }
     likeBar.hidden = false;
-    positionLikeBar(currentState.style);
+    positionCounter(likeBar, currentState.style.likeSize, currentState.style.likeX, currentState.style.likeY);
     likeBar.dataset.status = "connected";
     likeBar.removeAttribute("title");
     overlayLikeCount.textContent = Number(data.likes).toLocaleString("pt-BR");
@@ -158,6 +177,37 @@ async function refreshLikeGoal() {
     if (signature === activeLikeSignature) likeBar.dataset.status = "unavailable";
   } finally {
     if (signature === activeLikeSignature) likePollTimer = setTimeout(refreshLikeGoal, 5000);
+  }
+}
+
+async function refreshSubscribers() {
+  if (!activeSubscriberUrl) return;
+  const liveUrl = activeSubscriberUrl;
+  try {
+    const response = await fetch("/youtube/subscribers", { cache: "no-store" });
+    const data = await response.json();
+    if (liveUrl !== activeSubscriberUrl) return;
+    if (!response.ok || !data.ok) {
+      subscriberBadge.dataset.status = "unavailable";
+      subscriberBadge.title = data.error === "youtube_api_unconfigured"
+        ? "Configure a API do YouTube no servidor."
+        : "Contagem de inscritos indisponível no momento.";
+      return;
+    }
+    const subscribers = data.subscribers === null ? null : Number(data.subscribers);
+    overlaySubscriberCount.textContent = Number.isFinite(subscribers)
+      ? `≈ ${subscribers.toLocaleString("pt-BR")}`
+      : "—";
+    overlaySubscriberChannel.textContent = data.channelTitle || "";
+    subscriberBadge.dataset.status = Number.isFinite(subscribers) ? "connected" : "unavailable";
+    subscriberBadge.title = Number.isFinite(subscribers)
+      ? "Número aproximado de inscritos informado pelo YouTube."
+      : "Este canal não disponibiliza a contagem de inscritos.";
+    positionCounter(subscriberBadge, currentState.style.subscriberSize, currentState.style.subscriberX, currentState.style.subscriberY);
+  } catch {
+    if (liveUrl === activeSubscriberUrl) subscriberBadge.dataset.status = "unavailable";
+  } finally {
+    if (liveUrl === activeSubscriberUrl) subscriberPollTimer = setTimeout(refreshSubscribers, 15000);
   }
 }
 

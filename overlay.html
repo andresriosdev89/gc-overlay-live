@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>GC Overlay - Live</title>
-    <link rel="stylesheet" href="overlay.css?v=18" />
+    <link rel="stylesheet" href="overlay.css?v=19" />
   </head>
   <body class="overlay-body">
     <main class="broadcast-frame" id="overlayRoot">
@@ -19,6 +19,14 @@
         </div>
         <div class="like-bar-goal"><span>META</span><strong id="overlayLikeGoal">—</strong></div>
         <div class="like-bar-celebration" id="likeCelebration" hidden>META BATIDA!</div>
+      </section>
+      <section class="subscriber-badge" id="subscriberBadge" hidden aria-live="polite">
+        <span class="subscriber-badge-mark">OWTV</span>
+        <span class="subscriber-badge-copy">
+          <span>INSCRITOS NO CANAL</span>
+          <strong id="overlaySubscriberCount">—</strong>
+          <small id="overlaySubscriberChannel"></small>
+        </span>
       </section>
       <section class="chat-highlight" id="chatHighlight" hidden>
         <div class="chat-highlight-heading">CHAT EM DESTAQUE</div>
@@ -37,7 +45,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=18"></script>
-    <script src="overlay.js?v=18"></script>
+    <script src="shared.js?v=19"></script>
+    <script src="overlay.js?v=19"></script>
   </body>
 </html>
