@@ -342,9 +342,20 @@ textarea {
   font-size: 17px;
 }
 
-.chat-picker-heading .button {
-  padding: 7px 10px;
-  font-size: 12px;
+.chat-highlight-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--control-line);
+  border-radius: 6px;
+  background: #12181e;
+  color: #f3f5f7;
+  font-size: 13px;
+}
+
+.chat-highlight-toggle:has(input:disabled) {
+  opacity: 0.6;
 }
 
 .chat-messages-list {

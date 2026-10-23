@@ -28,7 +28,7 @@ const openChatLink = document.getElementById("openChatLink");
 const chatPicker = document.querySelector(".chat-picker");
 const chatPickerStatus = document.getElementById("chatPickerStatus");
 const chatMessagesList = document.getElementById("chatMessagesList");
-const clearChatHighlightButton = document.getElementById("clearChatHighlightButton");
+const chatHighlightVisibleInput = document.getElementById("chatHighlightVisibleInput");
 const tarjaPresetInput = document.getElementById("tarjaPresetInput");
 const overlayPreview = document.getElementById("overlayPreview");
 
@@ -358,9 +358,11 @@ resetButton.addEventListener("click", async () => {
 
 retryButton.addEventListener("click", flushSave);
 
-clearChatHighlightButton.addEventListener("click", () => {
-  queueState({ ...currentState, chatHighlight: { ...currentState.chatHighlight, visible: false } }, true);
-  renderChatHighlightControls();
+chatHighlightVisibleInput.addEventListener("change", () => {
+  queueState({
+    ...currentState,
+    chatHighlight: { ...currentState.chatHighlight, visible: chatHighlightVisibleInput.checked },
+  }, true);
 });
 
 liveUrlInput.addEventListener("input", updateYouTubeState);
@@ -429,7 +431,8 @@ function updateLiveDashboard() {
 }
 
 function renderChatHighlightControls() {
-  clearChatHighlightButton.hidden = !currentState.chatHighlight.visible;
+  chatHighlightVisibleInput.checked = Boolean(currentState.chatHighlight.visible && currentState.chatHighlight.text);
+  chatHighlightVisibleInput.disabled = !currentState.chatHighlight.text;
 }
 
 async function refreshYouTubeChat() {
