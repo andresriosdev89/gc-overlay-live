@@ -76,8 +76,8 @@ body {
   transform-origin: top left;
   top: 20%;
   left: 4%;
-  width: min(30%, 540px);
-  min-height: clamp(72px, 8vh, 100px);
+  width: max-content;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: clamp(10px, 1vw, 20px);
@@ -136,14 +136,6 @@ body {
   font-size: clamp(20px, 1.9vw, 36px);
   font-weight: 950;
   line-height: 1;
-  white-space: nowrap;
-}
-
-.subscriber-badge-copy small {
-  overflow: hidden;
-  color: var(--subscriber-subtitle);
-  font-size: clamp(10px, 0.78vw, 15px);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -542,10 +534,6 @@ body {
 @media (max-aspect-ratio: 4/5) {
   .like-bar {
     width: 94%;
-  }
-
-  .subscriber-badge {
-    width: 75%;
   }
 
   .lower-third {

@@ -12,7 +12,6 @@ const overlayLikeFill = document.getElementById("overlayLikeFill");
 const likeCelebration = document.getElementById("likeCelebration");
 const subscriberBadge = document.getElementById("subscriberBadge");
 const overlaySubscriberCount = document.getElementById("overlaySubscriberCount");
-const overlaySubscriberChannel = document.getElementById("overlaySubscriberChannel");
 const chatHighlight = document.getElementById("chatHighlight");
 const chatHighlightAuthor = document.getElementById("chatHighlightAuthor");
 const chatHighlightText = document.getElementById("chatHighlightText");
@@ -80,7 +79,6 @@ function renderOverlay(state) {
     activeSubscriberUrl = state.youtube?.liveUrl || "";
     clearTimeout(subscriberPollTimer);
     overlaySubscriberCount.textContent = "—";
-    overlaySubscriberChannel.textContent = "";
     if (activeSubscriberUrl) refreshSubscribers();
   }
 
@@ -196,9 +194,8 @@ async function refreshSubscribers() {
     }
     const subscribers = data.subscribers === null ? null : Number(data.subscribers);
     overlaySubscriberCount.textContent = Number.isFinite(subscribers)
-      ? `≈ ${subscribers.toLocaleString("pt-BR")}`
+      ? subscribers.toLocaleString("pt-BR")
       : "—";
-    overlaySubscriberChannel.textContent = data.channelTitle || "";
     subscriberBadge.dataset.status = Number.isFinite(subscribers) ? "connected" : "unavailable";
     subscriberBadge.title = Number.isFinite(subscribers)
       ? "Número aproximado de inscritos informado pelo YouTube."

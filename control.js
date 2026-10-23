@@ -494,7 +494,7 @@ async function refreshYouTubeStats() {
     const subscribers = stats.subscribers === null ? null : Number(stats.subscribers);
     lastLikes = Number.isFinite(likes) ? likes : null;
     likeCount.textContent = Number.isFinite(likes) ? likes.toLocaleString("pt-BR") : "—";
-    subscriberCount.textContent = Number.isFinite(subscribers) ? `≈ ${subscribers.toLocaleString("pt-BR")}` : "—";
+    subscriberCount.textContent = Number.isFinite(subscribers) ? subscribers.toLocaleString("pt-BR") : "—";
     updateGoalProgress(lastLikes);
     liveStatus.textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. A meta avança automaticamente; inscritos são aproximados pelo YouTube.`;
   } catch (error) {

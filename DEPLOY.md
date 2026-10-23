@@ -9,8 +9,8 @@ npm start
 
 Links locais:
 
-- Painel: `http://127.0.0.1:5173/control.html?v=19`
-- Overlay: `http://127.0.0.1:5173/overlay.html?v=19`
+- Painel: `http://127.0.0.1:5173/control.html?v=20`
+- Overlay: `http://127.0.0.1:5173/overlay.html?v=20`
 
 ## Colocar publico
 
@@ -31,8 +31,8 @@ No plano gratis do Render, o app funciona, mas arquivos enviados e estado podem 
 
 Troque `https://seu-dominio.com` pelo dominio do deploy:
 
-- Painel protegido: `https://seu-dominio.com/control.html?v=19&key=SUA_CHAVE`
-- Overlay publico: `https://seu-dominio.com/overlay.html?v=19`
+- Painel protegido: `https://seu-dominio.com/control.html?v=20&key=SUA_CHAVE`
+- Overlay publico: `https://seu-dominio.com/overlay.html?v=20`
 - Reset protegido: `https://seu-dominio.com/cache-reset.html?key=SUA_CHAVE`
 
 ## Render gratis

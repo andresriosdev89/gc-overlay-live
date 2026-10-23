@@ -6,8 +6,8 @@ Para atualizacao em tempo real entre painel e overlay, use `npm start`.
 
 ## Links
 
-- Painel de controle: `http://127.0.0.1:5173/control.html?v=19`
-- Overlay da live: `http://127.0.0.1:5173/overlay.html?v=19`
+- Painel de controle: `http://127.0.0.1:5173/control.html?v=20`
+- Overlay da live: `http://127.0.0.1:5173/overlay.html?v=20`
 - Reset de cache: `http://127.0.0.1:5173/cache-reset.html`
 
 ## Como usar
@@ -19,7 +19,7 @@ Para atualizacao em tempo real entre painel e overlay, use `npm start`.
 5. No OBS/vMix, adicione uma Browser Source usando o link do overlay. O fundo da pagina e transparente: somente a tarja, a barra de likes e uma mensagem do chat destacada aparecem na transmissao.
 6. Cole o link da live do YouTube, defina a meta inicial e o incremento. O painel acompanha likes, inscritos e chat; a barra OWTV no overlay avanca para a proxima meta automaticamente e celebra quando ela e atingida.
 7. Clique em uma mensagem da lista para destaca-la numa faixa integrada acima da tarja. Use **Retirar destaque** para esconder a mensagem sem alterar a manchete do GC.
-8. Use **Inscritos no overlay** para mostrar ou ocultar o contador do canal da live. Arraste-o na previa ou ajuste seu tamanho e posicao sem alterar a meta de likes.
+8. Use **Inscritos no overlay** para mostrar ou ocultar o contador do canal da live. Arraste-o na previa ou ajuste seu tamanho e posicao sem alterar a meta de likes. A caixa se adapta ao numero exibido, sem simbolo de aproximacao nem nome do canal.
 
 O painel mostra se cada alteracao foi salva no servidor. Se o envio da logo falhar, a imagem anterior permanece no overlay. O chat incorporado depende de a live estar ativa e do suporte do YouTube ao dispositivo; o painel inclui um link para abrir o chat separadamente.
 
