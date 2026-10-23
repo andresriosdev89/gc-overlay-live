@@ -33,6 +33,7 @@ body {
   --like-subtitle: #c4e8e4;
   position: absolute;
   z-index: 3;
+  transform-origin: top left;
   top: 4%;
   left: 4%;
   width: min(42%, 800px);

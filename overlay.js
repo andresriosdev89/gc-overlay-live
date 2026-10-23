@@ -74,9 +74,19 @@ function renderOverlay(state) {
 }
 
 function positionLikeBar(style) {
+  const requestedScale = Math.max(0.5, Math.min(2, (Number(style.likeSize) || 100) / 100));
+  const baseWidth = likeBar.offsetWidth;
+  const baseHeight = likeBar.offsetHeight;
+  const scale = Math.min(
+    requestedScale,
+    baseWidth ? overlayRoot.clientWidth / baseWidth : requestedScale,
+    baseHeight ? overlayRoot.clientHeight / baseHeight : requestedScale,
+  );
+  likeBar.style.transform = `scale(${scale})`;
   if (likeBar.hidden) return;
-  const travelX = Math.max(0, overlayRoot.clientWidth - likeBar.offsetWidth);
-  const travelY = Math.max(0, overlayRoot.clientHeight - likeBar.offsetHeight);
+  const barBounds = likeBar.getBoundingClientRect();
+  const travelX = Math.max(0, overlayRoot.clientWidth - barBounds.width);
+  const travelY = Math.max(0, overlayRoot.clientHeight - barBounds.height);
   const likeX = Math.max(0, Math.min(100, Number(style.likeX) || 0));
   const likeY = Math.max(0, Math.min(100, Number(style.likeY) || 0));
   likeBar.style.left = `${travelX * likeX / 100}px`;

@@ -62,6 +62,7 @@ const styleInputs = {
   logoY: document.getElementById("logoYInput"),
   likeX: document.getElementById("likeXInput"),
   likeY: document.getElementById("likeYInput"),
+  likeSize: document.getElementById("likeSizeInput"),
 };
 
 const styleValueLabels = {
@@ -73,6 +74,7 @@ const styleValueLabels = {
   logoY: document.getElementById("logoYValue"),
   likeX: document.getElementById("likeXValue"),
   likeY: document.getElementById("likeYValue"),
+  likeSize: document.getElementById("likeSizeValue"),
 };
 
 const visibleInputs = {
@@ -100,7 +102,7 @@ function hydrateForm(state) {
 
 function updateStyleValueLabels(state) {
   Object.entries(styleValueLabels).forEach(([key, label]) => {
-    label.textContent = ["logoSize", "logoX", "logoY", "likeX", "likeY", "gcOpacity"].includes(key) ? `${state.style[key]}%` : `${state.style[key]}px`;
+    label.textContent = ["logoSize", "logoX", "logoY", "likeX", "likeY", "likeSize", "gcOpacity"].includes(key) ? `${state.style[key]}%` : `${state.style[key]}px`;
   });
 }
 
@@ -147,8 +149,9 @@ overlayPreview.addEventListener("load", () => {
   previewLikeBar.addEventListener("pointermove", (event) => {
     if (!previewLikeBar.hasPointerCapture(event.pointerId)) return;
     const bounds = previewFrame.getBoundingClientRect();
-    const travelX = Math.max(0, bounds.width - previewLikeBar.offsetWidth);
-    const travelY = Math.max(0, bounds.height - previewLikeBar.offsetHeight);
+    const barBounds = previewLikeBar.getBoundingClientRect();
+    const travelX = Math.max(0, bounds.width - barBounds.width);
+    const travelY = Math.max(0, bounds.height - barBounds.height);
     const left = Math.max(0, Math.min(travelX, event.clientX - bounds.left - likeDragOffsetX));
     const top = Math.max(0, Math.min(travelY, event.clientY - bounds.top - likeDragOffsetY));
     styleInputs.likeX.value = travelX ? Math.round(left / travelX * 100) : 0;

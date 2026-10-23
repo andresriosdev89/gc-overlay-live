@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Painel do GC Overlay</title>
-    <link rel="stylesheet" href="styles.css?v=17" />
+    <link rel="stylesheet" href="styles.css?v=18" />
   </head>
   <body class="control-body">
     <main class="control-shell">
@@ -18,7 +18,7 @@
           <p class="save-status" id="saveStatus" role="status" aria-live="polite">Carregando conteúdo...</p>
         </div>
         <nav class="header-actions">
-          <a class="button ghost" href="overlay.html?v=17" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="overlay.html?v=18" target="_blank" rel="noreferrer">Abrir overlay</a>
           <a class="button ghost" href="#livePanel">Acompanhar live</a>
           <button class="button ghost" id="retryButton" type="button" hidden>Tentar salvar</button>
           <button class="button danger" id="resetButton" type="button">Resetar</button>
@@ -121,8 +121,12 @@
           </fieldset>
 
           <fieldset>
-            <legend>Posição da meta de likes</legend>
-            <p class="field-help">Arraste a barra na prévia ou ajuste sua posição. Ela se move livremente pelo overlay, sem alterar a tarja, a logo ou os textos.</p>
+            <legend>Meta de likes</legend>
+            <p class="field-help">Arraste a barra na prévia ou ajuste posição e tamanho. Isso não altera a tarja, a logo ou os textos.</p>
+            <label class="range-control">
+              <span>Tamanho da barra <strong id="likeSizeValue"></strong></span>
+              <input type="range" id="likeSizeInput" min="50" max="200" step="5" />
+            </label>
             <label class="range-control">
               <span>Horizontal <strong id="likeXValue"></strong></span>
               <input type="range" id="likeXInput" min="0" max="100" step="1" />
@@ -163,7 +167,7 @@
 
         <aside class="preview-panel">
           <div class="preview-window">
-            <iframe title="Preview do overlay" id="overlayPreview" src="overlay.html?v=17"></iframe>
+            <iframe title="Preview do overlay" id="overlayPreview" src="overlay.html?v=18"></iframe>
           </div>
           <section class="live-panel" id="livePanel" aria-label="Acompanhamento da live">
             <div class="live-stats">
@@ -192,7 +196,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=17"></script>
-    <script src="control.js?v=17"></script>
+    <script src="shared.js?v=18"></script>
+    <script src="control.js?v=18"></script>
   </body>
 </html>

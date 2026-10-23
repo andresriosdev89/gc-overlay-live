@@ -60,6 +60,7 @@ const defaultOverlayState = {
     logoY: 50,
     likeX: 7,
     likeY: 4,
+    likeSize: 100,
   },
   layout: {
     ratio: "landscape",
