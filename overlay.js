@@ -5,6 +5,11 @@ const gcTitle = document.getElementById("gcTitle");
 const gcSubtitle = document.getElementById("gcSubtitle");
 const logoBox = document.querySelector(".logo-box");
 const logoImage = document.getElementById("logoImage");
+const likeBar = document.getElementById("likeBar");
+const overlayLikeCount = document.getElementById("overlayLikeCount");
+const overlayLikeGoal = document.getElementById("overlayLikeGoal");
+const overlayLikeFill = document.getElementById("overlayLikeFill");
+const likeCelebration = document.getElementById("likeCelebration");
 const chatHighlight = document.getElementById("chatHighlight");
 const chatHighlightAuthor = document.getElementById("chatHighlightAuthor");
 const chatHighlightText = document.getElementById("chatHighlightText");
@@ -13,6 +18,10 @@ const supportedPresets = new Set(["classic", "cream", "stadium", "night", "duoto
 let currentState = loadOverlayState();
 let logoRef = "";
 let logoObjectUrl = "";
+let activeLikeSignature = "";
+let lastGoalVersion = null;
+let likePollTimer;
+let celebrationTimer;
 
 function renderOverlay(state) {
   currentState = state;
@@ -24,11 +33,13 @@ function renderOverlay(state) {
   gcSubtitle.textContent = state.gcSubtitle || "";
   lowerThird.hidden = !gcTitle.textContent && !gcSubtitle.textContent && !showLogo;
   lowerThird.dataset.preset = preset;
-  lowerThird.classList.toggle("without-logo", !showLogo);
   logoBox.hidden = !showLogo;
   renderLogo(state.images.logo);
 
-  lowerThird.style.setProperty("--logo-scale", String(Number(style.logoSize) / 100));
+  const logoSize = Math.min(lowerThird.clientHeight * Number(style.logoSize) * 0.0075, lowerThird.clientWidth * 0.5);
+  lowerThird.style.setProperty("--logo-size", `${logoSize}px`);
+  lowerThird.style.setProperty("--logo-x", `${Math.max(0, Math.min(100, Number(style.logoX) || 0))}%`);
+  lowerThird.style.setProperty("--logo-y", `${Math.max(0, Math.min(100, Number(style.logoY) || 0))}%`);
   lowerThird.style.setProperty("--gc-surface", withAlpha(style.gcBgColor, Number(style.gcOpacity) / 100));
   lowerThird.style.setProperty("--gc-sheen", withAlpha("#ffffff", Number(style.gcOpacity) / 1000));
   lowerThird.style.setProperty("--gc-glow", withAlpha(style.gcAccentColor, Number(style.gcOpacity) / 450));
@@ -38,6 +49,22 @@ function renderOverlay(state) {
   lowerThird.style.setProperty("--gc-subtitle-surface", withAlpha(style.gcSubtitleBgColor, Number(style.gcOpacity) / 100));
   gcTitle.style.color = style.gcTitleColor;
   gcSubtitle.style.color = style.gcSubtitleColor;
+  likeBar.style.setProperty("--like-surface", withAlpha(style.gcBgColor, 0.94));
+  likeBar.style.setProperty("--like-accent", style.gcAccentColor);
+  likeBar.style.setProperty("--like-title", style.gcTitleColor);
+  likeBar.style.setProperty("--like-subtitle", style.gcSubtitleColor);
+
+  const likeSignature = `${state.youtube?.liveUrl || ""}:${state.youtube?.likeGoal}:${state.youtube?.likeGoalStep}`;
+  if (likeSignature !== activeLikeSignature) {
+    activeLikeSignature = likeSignature;
+    lastGoalVersion = null;
+    clearTimeout(likePollTimer);
+    likeBar.hidden = !state.youtube?.liveUrl;
+    overlayLikeCount.textContent = "—";
+    overlayLikeGoal.textContent = Number(state.youtube?.likeGoal || 100).toLocaleString("pt-BR");
+    overlayLikeFill.style.width = "0%";
+    if (state.youtube?.liveUrl) refreshLikeGoal();
+  }
 
   const textScale = Math.max(0.1, overlayRoot.clientWidth / 1920);
   fitLowerThirdText(style, textScale);
@@ -70,13 +97,57 @@ function lowerThirdTextOverflows() {
 
 function renderChatHighlight(highlight, style, preset) {
   chatHighlight.hidden = !highlight?.visible || !highlight.text;
+  chatHighlight.classList.toggle("standalone", lowerThird.hidden);
+  lowerThird.classList.toggle("with-chat", !chatHighlight.hidden);
   if (chatHighlight.hidden) return;
   chatHighlightAuthor.textContent = highlight.author || "Espectador";
+  chatHighlightAuthor.title = chatHighlightAuthor.textContent;
   chatHighlightText.textContent = highlight.text;
   chatHighlight.style.setProperty("--chat-bg", withAlpha(style.gcBgColor, 0.94));
   chatHighlight.style.setProperty("--chat-accent-color", style.gcAccentColor);
   chatHighlight.style.setProperty("--chat-title-color", style.gcTitleColor);
   chatHighlight.style.setProperty("--chat-text-color", preset === "duotone" ? style.gcTitleColor : style.gcSubtitleColor);
+}
+
+async function refreshLikeGoal() {
+  if (!currentState.youtube?.liveUrl) return;
+  const signature = activeLikeSignature;
+  try {
+    const response = await fetch("/youtube/goal", { cache: "no-store" });
+    const data = await response.json();
+    if (signature !== activeLikeSignature) return;
+    if (!response.ok || !data.ok) {
+      likeBar.dataset.status = "unavailable";
+      likeBar.title = data.error === "youtube_api_unconfigured"
+        ? "Configure a API do YouTube no servidor."
+        : "Contagem de likes indisponível no momento.";
+      return;
+    }
+    likeBar.hidden = false;
+    likeBar.dataset.status = "connected";
+    likeBar.removeAttribute("title");
+    overlayLikeCount.textContent = Number(data.likes).toLocaleString("pt-BR");
+    overlayLikeGoal.textContent = Number(data.goal).toLocaleString("pt-BR");
+    overlayLikeFill.style.width = `${Math.max(0, Math.min(100, Number(data.progress) || 0))}%`;
+    if (lastGoalVersion !== null && data.goalVersion > lastGoalVersion) celebrateLikeGoal();
+    lastGoalVersion = data.goalVersion;
+  } catch {
+    if (signature === activeLikeSignature) likeBar.dataset.status = "unavailable";
+  } finally {
+    if (signature === activeLikeSignature) likePollTimer = setTimeout(refreshLikeGoal, 5000);
+  }
+}
+
+function celebrateLikeGoal() {
+  clearTimeout(celebrationTimer);
+  likeCelebration.hidden = false;
+  likeBar.classList.remove("goal-reached");
+  void likeBar.offsetWidth;
+  likeBar.classList.add("goal-reached");
+  celebrationTimer = setTimeout(() => {
+    likeCelebration.hidden = true;
+    likeBar.classList.remove("goal-reached");
+  }, 4500);
 }
 
 function renderLogo(sourceRef) {

@@ -56,6 +56,8 @@ const defaultOverlayState = {
     mainSubtitleSize: 15,
     postSize: 19,
     logoSize: 100,
+    logoX: 10,
+    logoY: 50,
   },
   layout: {
     ratio: "landscape",
@@ -72,6 +74,7 @@ const defaultOverlayState = {
   youtube: {
     liveUrl: "",
     likeGoal: 100,
+    likeGoalStep: 100,
   },
   chatHighlight: {
     visible: false,
@@ -272,7 +275,11 @@ function requestJson(method, url, data) {
     }
     request.onload = () => {
       if (request.status < 200 || request.status >= 300) {
-        reject(new Error(`HTTP ${request.status}`));
+        const error = new Error(`HTTP ${request.status}`);
+        try {
+          error.code = JSON.parse(request.responseText).error || "";
+        } catch {}
+        reject(error);
         return;
       }
       try {

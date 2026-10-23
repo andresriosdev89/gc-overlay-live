@@ -18,6 +18,7 @@ const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB || 250) * 1024 * 1024;
 const clients = new Set();
 const mediaMeta = new Map();
 const youtubeStatsCache = new Map();
+const youtubeStatsInFlight = new Map();
 const youtubeChatCache = new Map();
 
 let overlayState = null;
@@ -53,8 +54,8 @@ async function bootstrap() {
   server.listen(PORT, HOST, () => {
     const localUrl = `http://127.0.0.1:${PORT}`;
     console.log(`GC Overlay server running on ${HOST}:${PORT}`);
-    console.log(`Control: ${localUrl}/control.html?v=14`);
-    console.log(`Overlay: ${localUrl}/overlay.html?v=14`);
+    console.log(`Control: ${localUrl}/control.html?v=16`);
+    console.log(`Overlay: ${localUrl}/overlay.html?v=16`);
   });
 }
 
@@ -69,6 +70,29 @@ async function handleRequest(request, response) {
 
     if (request.method === "GET" && requestUrl.pathname === "/state") {
       sendJson(response, overlayState);
+      return;
+    }
+
+    if (request.method === "GET" && requestUrl.pathname === "/youtube/goal") {
+      const videoId = getYouTubeVideoId(overlayState?.youtube?.liveUrl || "");
+      if (!videoId) {
+        sendJson(response, { ok: false, error: "live_not_configured" });
+        return;
+      }
+      if (!YOUTUBE_API_KEY) {
+        sendJson(response, { ok: false, error: "youtube_api_unconfigured" }, 503);
+        return;
+      }
+      try {
+        const stats = await getYouTubeStats(videoId);
+        if (stats.likes === null) {
+          sendJson(response, { ok: false, error: "likes_unavailable" }, 502);
+          return;
+        }
+        sendJson(response, { ok: true, likes: stats.likes, ...calculateLikeGoal(stats.likes, overlayState.youtube) });
+      } catch (error) {
+        sendJson(response, { ok: false, error: error.code || "youtube_unavailable" }, 502);
+      }
       return;
     }
 
@@ -88,9 +112,12 @@ async function handleRequest(request, response) {
       }
       try {
         const stats = await getYouTubeStats(videoId);
-        sendJson(response, stats);
-      } catch {
-        sendJson(response, { ok: false, error: "youtube_unavailable" }, 502);
+        const goal = getYouTubeVideoId(overlayState?.youtube?.liveUrl || "") === videoId && stats.likes !== null
+          ? calculateLikeGoal(stats.likes, overlayState.youtube)
+          : null;
+        sendJson(response, { ...stats, goal });
+      } catch (error) {
+        sendJson(response, { ok: false, error: error.code || "youtube_unavailable" }, 502);
       }
       return;
     }
@@ -111,8 +138,8 @@ async function handleRequest(request, response) {
       }
       try {
         sendJson(response, await getYouTubeChat(videoId));
-      } catch {
-        sendJson(response, { ok: false, error: "youtube_unavailable" }, 502);
+      } catch (error) {
+        sendJson(response, { ok: false, error: error.code || "youtube_unavailable" }, 502);
       }
       return;
     }
@@ -254,7 +281,7 @@ function serveStatic(urlPath, response) {
     .replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(ROOT, safePath);
 
-  if (!filePath.startsWith(ROOT) || filePath.startsWith(DATA_DIR)) {
+  if (!filePath.startsWith(ROOT) || filePath.startsWith(DATA_DIR) || safePath.split(/[\\/]/).some((segment) => segment.startsWith("."))) {
     response.writeHead(403);
     response.end("Forbidden");
     return;
@@ -315,22 +342,69 @@ function safeMediaKey(value) {
   return value.replace(/[^a-z0-9_-]/gi, "_").slice(0, 80) || "media";
 }
 
+function getYouTubeVideoId(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase();
+    let videoId = "";
+    if (host === "youtu.be" || host === "www.youtu.be") {
+      videoId = url.pathname.split("/")[1];
+    } else if (["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)) {
+      videoId = url.pathname === "/watch" ? url.searchParams.get("v") : url.pathname.match(/^\/(?:live|embed)\/([^/]+)/)?.[1];
+    }
+    return /^[a-zA-Z0-9_-]{11}$/.test(videoId || "") ? videoId : "";
+  } catch {
+    return "";
+  }
+}
+
+function calculateLikeGoal(likes, youtube) {
+  const initialGoal = Math.max(1, Number(youtube.likeGoal) || 1);
+  const step = Math.max(1, Number(youtube.likeGoalStep) || 100);
+  const goalVersion = likes < initialGoal ? 0 : Math.floor((likes - initialGoal) / step) + 1;
+  const goal = initialGoal + goalVersion * step;
+  return {
+    goal,
+    goalVersion,
+    reachedGoal: goalVersion ? goal - step : null,
+    progress: Math.min(100, Math.round(likes / goal * 100)),
+  };
+}
+
 async function getYouTubeStats(videoId) {
   const cached = youtubeStatsCache.get(videoId);
-  if (cached && Date.now() - cached.cachedAt < 45000) return cached.data;
+  if (cached && Date.now() - cached.cachedAt < 15000) return cached.data;
+  if (youtubeStatsInFlight.has(videoId)) return youtubeStatsInFlight.get(videoId);
 
+  const pending = fetchYouTubeStats(videoId);
+  youtubeStatsInFlight.set(videoId, pending);
+  try {
+    return await pending;
+  } finally {
+    youtubeStatsInFlight.delete(videoId);
+  }
+}
+
+async function fetchYouTubeStats(videoId) {
   const videoData = await youtubeApiRequest("videos", {
     part: "snippet,statistics,liveStreamingDetails",
     id: videoId,
   });
   const video = videoData.items?.[0];
-  if (!video) throw new Error("video_not_found");
+  if (!video) {
+    const error = new Error("video_not_found");
+    error.code = "video_not_found";
+    throw error;
+  }
 
-  const channelData = await youtubeApiRequest("channels", {
-    part: "statistics",
-    id: video.snippet.channelId,
-  });
-  const channel = channelData.items?.[0];
+  let channel;
+  try {
+    const channelData = await youtubeApiRequest("channels", {
+      part: "statistics",
+      id: video.snippet.channelId,
+    });
+    channel = channelData.items?.[0];
+  } catch {}
   const stats = {
     videoId,
     likes: video.statistics?.likeCount === undefined ? null : Number(video.statistics.likeCount),
@@ -394,6 +468,18 @@ async function youtubeApiRequest(resource, params) {
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   url.searchParams.set("key", YOUTUBE_API_KEY);
   const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!response.ok) throw new Error("youtube_unavailable");
+  if (!response.ok) {
+    const reason = (await response.json().catch(() => null))?.error?.errors?.[0]?.reason;
+    const code = reason === "quotaExceeded" || reason === "dailyLimitExceeded"
+      ? "youtube_quota_exceeded"
+      : reason === "liveChatDisabled" || reason === "liveChatEnded" || reason === "liveChatNotFound"
+        ? "youtube_chat_unavailable"
+      : response.status === 400 || response.status === 401 || response.status === 403
+        ? "youtube_key_or_permission_denied"
+        : "youtube_unavailable";
+    const error = new Error(code);
+    error.code = code;
+    throw error;
+  }
   return response.json();
 }

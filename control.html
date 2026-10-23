@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Painel do GC Overlay</title>
-    <link rel="stylesheet" href="styles.css?v=14" />
+    <link rel="stylesheet" href="styles.css?v=16" />
   </head>
   <body class="control-body">
     <main class="control-shell">
@@ -18,7 +18,7 @@
           <p class="save-status" id="saveStatus" role="status" aria-live="polite">Carregando conteúdo...</p>
         </div>
         <nav class="header-actions">
-          <a class="button ghost" href="overlay.html?v=14" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="overlay.html?v=16" target="_blank" rel="noreferrer">Abrir overlay</a>
           <a class="button ghost" href="#livePanel">Acompanhar live</a>
           <button class="button ghost" id="retryButton" type="button" hidden>Tentar salvar</button>
           <button class="button danger" id="resetButton" type="button">Resetar</button>
@@ -93,7 +93,7 @@
           </fieldset>
 
           <fieldset>
-            <legend>Tamanho do texto e logo</legend>
+            <legend>Tamanho do texto</legend>
             <label class="range-control">
               <span>Manchete do GC <strong id="gcTitleSizeValue"></strong></span>
               <input type="range" id="gcTitleSizeInput" min="24" max="92" step="1" />
@@ -101,10 +101,6 @@
             <label class="range-control">
               <span>Subtitulo do GC <strong id="gcSubtitleSizeValue"></strong></span>
               <input type="range" id="gcSubtitleSizeInput" min="12" max="46" step="1" />
-            </label>
-            <label class="range-control">
-              <span>Tamanho da logo <strong id="logoSizeValue"></strong></span>
-              <input type="range" id="logoSizeInput" min="50" max="200" step="5" />
             </label>
           </fieldset>
 
@@ -115,13 +111,17 @@
               <input type="url" id="liveUrlInput" placeholder="https://www.youtube.com/watch?v=..." />
             </label>
             <label>
-              Meta de likes
+              Meta inicial de likes
               <input type="number" id="likeGoalInput" min="1" max="1000000000" step="1" />
+            </label>
+            <label>
+              Próxima meta aumenta em
+              <input type="number" id="likeGoalStepInput" min="1" max="1000000000" step="1" />
             </label>
           </fieldset>
 
           <fieldset>
-            <legend>Logo da tarja</legend>
+            <legend>Logo livre sobre a tarja</legend>
             <div class="switch-grid">
               <label>
                 <input type="checkbox" id="logoVisibleInput" />
@@ -132,12 +132,25 @@
               Trocar logo (PNG, JPG ou WebP)
               <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" />
             </label>
+            <p class="field-help">Arraste a logo na prévia ou use os ajustes abaixo. Sua posição e tamanho não alteram a manchete.</p>
+            <label class="range-control">
+              <span>Tamanho da logo <strong id="logoSizeValue"></strong></span>
+              <input type="range" id="logoSizeInput" min="25" max="400" step="5" />
+            </label>
+            <label class="range-control">
+              <span>Posição horizontal <strong id="logoXValue"></strong></span>
+              <input type="range" id="logoXInput" min="0" max="100" step="1" />
+            </label>
+            <label class="range-control">
+              <span>Posição vertical <strong id="logoYValue"></strong></span>
+              <input type="range" id="logoYInput" min="0" max="100" step="1" />
+            </label>
           </fieldset>
         </form>
 
         <aside class="preview-panel">
           <div class="preview-window">
-            <iframe title="Preview do overlay" src="overlay.html?v=14"></iframe>
+            <iframe title="Preview do overlay" id="overlayPreview" src="overlay.html?v=16"></iframe>
           </div>
           <section class="live-panel" id="livePanel" aria-label="Acompanhamento da live">
             <div class="live-stats">
@@ -166,7 +179,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=14"></script>
-    <script src="control.js?v=14"></script>
+    <script src="shared.js?v=16"></script>
+    <script src="control.js?v=16"></script>
   </body>
 </html>

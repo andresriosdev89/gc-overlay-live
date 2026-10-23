@@ -16,6 +16,7 @@ const retryButton = document.getElementById("retryButton");
 const saveStatus = document.getElementById("saveStatus");
 const liveUrlInput = document.getElementById("liveUrlInput");
 const likeGoalInput = document.getElementById("likeGoalInput");
+const likeGoalStepInput = document.getElementById("likeGoalStepInput");
 const likeCount = document.getElementById("likeCount");
 const likeProgress = document.getElementById("likeProgress");
 const subscriberCount = document.getElementById("subscriberCount");
@@ -29,6 +30,7 @@ const chatPickerStatus = document.getElementById("chatPickerStatus");
 const chatMessagesList = document.getElementById("chatMessagesList");
 const clearChatHighlightButton = document.getElementById("clearChatHighlightButton");
 const tarjaPresetInput = document.getElementById("tarjaPresetInput");
+const overlayPreview = document.getElementById("overlayPreview");
 
 const tarjaColorKeys = [
   "gcTitleColor", "gcSubtitleColor", "gcBgColor", "gcBorderColor",
@@ -56,6 +58,8 @@ const styleInputs = {
   gcTitleSize: document.getElementById("gcTitleSizeInput"),
   gcSubtitleSize: document.getElementById("gcSubtitleSizeInput"),
   logoSize: document.getElementById("logoSizeInput"),
+  logoX: document.getElementById("logoXInput"),
+  logoY: document.getElementById("logoYInput"),
 };
 
 const styleValueLabels = {
@@ -63,6 +67,8 @@ const styleValueLabels = {
   gcSubtitleSize: document.getElementById("gcSubtitleSizeValue"),
   gcOpacity: document.getElementById("gcOpacityValue"),
   logoSize: document.getElementById("logoSizeValue"),
+  logoX: document.getElementById("logoXValue"),
+  logoY: document.getElementById("logoYValue"),
 };
 
 const visibleInputs = {
@@ -83,15 +89,43 @@ function hydrateForm(state) {
   });
   liveUrlInput.value = state.youtube.liveUrl;
   likeGoalInput.value = state.youtube.likeGoal;
+  likeGoalStepInput.value = state.youtube.likeGoalStep;
   renderChatHighlightControls();
   updateLiveDashboard();
 }
 
 function updateStyleValueLabels(state) {
   Object.entries(styleValueLabels).forEach(([key, label]) => {
-    label.textContent = key === "logoSize" || key === "gcOpacity" ? `${state.style[key]}%` : `${state.style[key]}px`;
+    label.textContent = ["logoSize", "logoX", "logoY", "gcOpacity"].includes(key) ? `${state.style[key]}%` : `${state.style[key]}px`;
   });
 }
+
+overlayPreview.addEventListener("load", () => {
+  const previewDocument = overlayPreview.contentDocument;
+  const previewLogo = previewDocument?.querySelector(".logo-box");
+  const previewTarja = previewDocument?.getElementById("lowerThird");
+  if (!previewLogo || !previewTarja) return;
+
+  previewLogo.classList.add("editable");
+  previewLogo.addEventListener("pointerdown", (event) => {
+    if (previewLogo.hidden) return;
+    event.preventDefault();
+    previewLogo.setPointerCapture(event.pointerId);
+    previewLogo.classList.add("dragging");
+  });
+  previewLogo.addEventListener("pointermove", (event) => {
+    if (!previewLogo.hasPointerCapture(event.pointerId)) return;
+    const bounds = previewTarja.getBoundingClientRect();
+    const logoX = Math.round(Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100)));
+    const logoY = Math.round(Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100)));
+    styleInputs.logoX.value = logoX;
+    styleInputs.logoY.value = logoY;
+    updateStyleState();
+  });
+  const stopDragging = () => previewLogo.classList.remove("dragging");
+  previewLogo.addEventListener("pointerup", stopDragging);
+  previewLogo.addEventListener("pointercancel", stopDragging);
+});
 
 function updateTextState() {
   const patch = {};
@@ -282,12 +316,14 @@ clearChatHighlightButton.addEventListener("click", () => {
 
 liveUrlInput.addEventListener("input", updateYouTubeState);
 likeGoalInput.addEventListener("input", updateYouTubeState);
+likeGoalStepInput.addEventListener("input", updateYouTubeState);
 
 function updateYouTubeState() {
   const likeGoal = Math.max(1, Number(likeGoalInput.value) || 1);
+  const likeGoalStep = Math.max(1, Number(likeGoalStepInput.value) || 1);
   queueState({
     ...currentState,
-    youtube: { liveUrl: liveUrlInput.value.trim(), likeGoal },
+    youtube: { ...currentState.youtube, liveUrl: liveUrlInput.value.trim(), likeGoal, likeGoalStep },
   });
   updateLiveDashboard();
 }
@@ -310,8 +346,6 @@ function getYouTubeVideoId(rawUrl) {
 
 function updateLiveDashboard() {
   const videoId = getYouTubeVideoId(currentState.youtube.liveUrl);
-  const goal = Math.max(1, Number(currentState.youtube.likeGoal) || 1);
-  likeProgress.textContent = goal.toLocaleString("pt-BR");
   if (videoId !== activeVideoId) lastLikes = null;
   updateGoalProgress(lastLikes);
   if (videoId === activeVideoId) return;
@@ -386,9 +420,15 @@ async function refreshYouTubeChat() {
     }
   } catch (error) {
     if (videoId !== activeVideoId) return;
-    chatPickerStatus.textContent = error.message === "HTTP 503"
+    chatPickerStatus.textContent = error.code === "youtube_api_unconfigured"
       ? "Para selecionar mensagens, configure a API do YouTube no servidor."
-      : "Não foi possível ler o chat agora. Nova tentativa automática em instantes.";
+      : error.code === "youtube_quota_exceeded"
+        ? "Cota da API do YouTube esgotada; o chat incorporado ainda pode funcionar."
+        : error.code === "youtube_chat_unavailable"
+          ? "O chat desta live não está mais disponível pela API."
+        : error.code === "youtube_key_or_permission_denied"
+          ? "A API não autorizou a leitura do chat. Confira a chave e as permissões."
+          : "Não foi possível ler o chat agora. Nova tentativa automática em instantes.";
   } finally {
     if (videoId === activeVideoId) chatPollTimer = setTimeout(refreshYouTubeChat, retryAfterMs);
   }
@@ -407,16 +447,26 @@ async function refreshYouTubeStats() {
     likeCount.textContent = Number.isFinite(likes) ? likes.toLocaleString("pt-BR") : "—";
     subscriberCount.textContent = Number.isFinite(subscribers) ? `≈ ${subscribers.toLocaleString("pt-BR")}` : "—";
     updateGoalProgress(lastLikes);
-    liveStatus.textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Inscritos são aproximados pelo YouTube.`;
+    liveStatus.textContent = `Atualizado às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. A meta avança automaticamente; inscritos são aproximados pelo YouTube.`;
   } catch (error) {
     if (videoId !== activeVideoId) return;
-    liveStatus.textContent = error.message === "HTTP 503" ? "Contadores aguardando a configuração da API do YouTube." : "Não foi possível atualizar os contadores do YouTube.";
+    liveStatus.textContent = error.code === "youtube_api_unconfigured"
+      ? "Contadores aguardando a chave da API do YouTube no servidor."
+      : error.code === "youtube_quota_exceeded"
+        ? "Cota diária da API do YouTube esgotada."
+        : error.code === "youtube_key_or_permission_denied"
+          ? "Chave da API sem permissão ou inválida para este servidor."
+          : "Não foi possível atualizar os contadores do YouTube.";
   }
 }
 
 function updateGoalProgress(likes) {
-  const goal = Math.max(1, Number(currentState.youtube.likeGoal) || 1);
+  const initialGoal = Math.max(1, Number(currentState.youtube.likeGoal) || 1);
+  const step = Math.max(1, Number(currentState.youtube.likeGoalStep) || 100);
+  const goalVersion = Number.isFinite(likes) && likes >= initialGoal ? Math.floor((likes - initialGoal) / step) + 1 : 0;
+  const goal = initialGoal + goalVersion * step;
   const percent = Number.isFinite(likes) ? Math.min(100, Math.round(likes / goal * 100)) : 0;
+  likeProgress.textContent = goal.toLocaleString("pt-BR");
   goalFill.style.width = `${percent}%`;
   goalTrack.setAttribute("aria-valuenow", String(percent));
 }
@@ -447,4 +497,4 @@ requestJson("GET", `/state?ts=${Date.now()}`)
     resetButton.disabled = false;
   });
 
-setInterval(refreshYouTubeStats, 45000);
+setInterval(refreshYouTubeStats, 15000);
