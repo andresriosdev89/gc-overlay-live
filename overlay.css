@@ -56,6 +56,15 @@ body {
   display: none;
 }
 
+.like-bar.editable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.like-bar.editable.dragging {
+  cursor: grabbing;
+}
+
 .like-bar-brand {
   display: grid;
   place-items: center;
@@ -450,9 +459,7 @@ body {
 
 @media (max-aspect-ratio: 4/5) {
   .like-bar {
-    left: 3%;
     width: 94%;
-    top: 3%;
   }
 
   .lower-third {

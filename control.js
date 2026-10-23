@@ -60,6 +60,8 @@ const styleInputs = {
   logoSize: document.getElementById("logoSizeInput"),
   logoX: document.getElementById("logoXInput"),
   logoY: document.getElementById("logoYInput"),
+  likeX: document.getElementById("likeXInput"),
+  likeY: document.getElementById("likeYInput"),
 };
 
 const styleValueLabels = {
@@ -69,6 +71,8 @@ const styleValueLabels = {
   logoSize: document.getElementById("logoSizeValue"),
   logoX: document.getElementById("logoXValue"),
   logoY: document.getElementById("logoYValue"),
+  likeX: document.getElementById("likeXValue"),
+  likeY: document.getElementById("likeYValue"),
 };
 
 const visibleInputs = {
@@ -96,7 +100,7 @@ function hydrateForm(state) {
 
 function updateStyleValueLabels(state) {
   Object.entries(styleValueLabels).forEach(([key, label]) => {
-    label.textContent = ["logoSize", "logoX", "logoY", "gcOpacity"].includes(key) ? `${state.style[key]}%` : `${state.style[key]}px`;
+    label.textContent = ["logoSize", "logoX", "logoY", "likeX", "likeY", "gcOpacity"].includes(key) ? `${state.style[key]}%` : `${state.style[key]}px`;
   });
 }
 
@@ -104,7 +108,9 @@ overlayPreview.addEventListener("load", () => {
   const previewDocument = overlayPreview.contentDocument;
   const previewLogo = previewDocument?.querySelector(".logo-box");
   const previewTarja = previewDocument?.getElementById("lowerThird");
-  if (!previewLogo || !previewTarja) return;
+  const previewLikeBar = previewDocument?.getElementById("likeBar");
+  const previewFrame = previewDocument?.getElementById("overlayRoot");
+  if (!previewLogo || !previewTarja || !previewLikeBar || !previewFrame) return;
 
   previewLogo.classList.add("editable");
   previewLogo.addEventListener("pointerdown", (event) => {
@@ -125,6 +131,33 @@ overlayPreview.addEventListener("load", () => {
   const stopDragging = () => previewLogo.classList.remove("dragging");
   previewLogo.addEventListener("pointerup", stopDragging);
   previewLogo.addEventListener("pointercancel", stopDragging);
+
+  let likeDragOffsetX = 0;
+  let likeDragOffsetY = 0;
+  previewLikeBar.classList.add("editable");
+  previewLikeBar.addEventListener("pointerdown", (event) => {
+    if (previewLikeBar.hidden) return;
+    event.preventDefault();
+    const bounds = previewLikeBar.getBoundingClientRect();
+    likeDragOffsetX = event.clientX - bounds.left;
+    likeDragOffsetY = event.clientY - bounds.top;
+    previewLikeBar.setPointerCapture(event.pointerId);
+    previewLikeBar.classList.add("dragging");
+  });
+  previewLikeBar.addEventListener("pointermove", (event) => {
+    if (!previewLikeBar.hasPointerCapture(event.pointerId)) return;
+    const bounds = previewFrame.getBoundingClientRect();
+    const travelX = Math.max(0, bounds.width - previewLikeBar.offsetWidth);
+    const travelY = Math.max(0, bounds.height - previewLikeBar.offsetHeight);
+    const left = Math.max(0, Math.min(travelX, event.clientX - bounds.left - likeDragOffsetX));
+    const top = Math.max(0, Math.min(travelY, event.clientY - bounds.top - likeDragOffsetY));
+    styleInputs.likeX.value = travelX ? Math.round(left / travelX * 100) : 0;
+    styleInputs.likeY.value = travelY ? Math.round(top / travelY * 100) : 0;
+    updateStyleState();
+  });
+  const stopLikeDragging = () => previewLikeBar.classList.remove("dragging");
+  previewLikeBar.addEventListener("pointerup", stopLikeDragging);
+  previewLikeBar.addEventListener("pointercancel", stopLikeDragging);
 });
 
 function updateTextState() {

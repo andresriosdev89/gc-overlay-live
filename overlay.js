@@ -66,9 +66,21 @@ function renderOverlay(state) {
     if (state.youtube?.liveUrl) refreshLikeGoal();
   }
 
+  positionLikeBar(style);
+
   const textScale = Math.max(0.1, overlayRoot.clientWidth / 1920);
   fitLowerThirdText(style, textScale);
   renderChatHighlight(state.chatHighlight, style, preset);
+}
+
+function positionLikeBar(style) {
+  if (likeBar.hidden) return;
+  const travelX = Math.max(0, overlayRoot.clientWidth - likeBar.offsetWidth);
+  const travelY = Math.max(0, overlayRoot.clientHeight - likeBar.offsetHeight);
+  const likeX = Math.max(0, Math.min(100, Number(style.likeX) || 0));
+  const likeY = Math.max(0, Math.min(100, Number(style.likeY) || 0));
+  likeBar.style.left = `${travelX * likeX / 100}px`;
+  likeBar.style.top = `${travelY * likeY / 100}px`;
 }
 
 function fitLowerThirdText(style, textScale) {
@@ -124,6 +136,7 @@ async function refreshLikeGoal() {
       return;
     }
     likeBar.hidden = false;
+    positionLikeBar(currentState.style);
     likeBar.dataset.status = "connected";
     likeBar.removeAttribute("title");
     overlayLikeCount.textContent = Number(data.likes).toLocaleString("pt-BR");

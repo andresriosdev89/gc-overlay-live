@@ -20,8 +20,8 @@
       const request = new XMLHttpRequest();
       request.open("POST", "/reset", true);
       if (key) request.setRequestHeader("X-Overlay-Key", key);
-      request.onloadend = () => location.replace("control.html?v=16&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
-      request.onerror = () => location.replace("control.html?v=16&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
+      request.onloadend = () => location.replace("control.html?v=17&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
+      request.onerror = () => location.replace("control.html?v=17&reset=" + Date.now() + (key ? "&key=" + encodeURIComponent(key) : ""));
       request.send();
     </script>
   </body>
