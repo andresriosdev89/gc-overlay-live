@@ -4,6 +4,14 @@ const OVERLAY_MEDIA_DB = "gc-overlay-media-v1";
 const OVERLAY_MEDIA_STORE = "media";
 let overlayAdminKey = "";
 
+const tarjaPalettes = {
+  classic: { gcTitleColor: "#f4ffff", gcSubtitleColor: "#c4e8e4", gcBgColor: "#10232c", gcBorderColor: "#3ac5b9", gcAccentColor: "#55e5c9", gcTitleBgColor: "#2c5b67", gcSubtitleBgColor: "#152f3b", gcOpacity: 88 },
+  cream: { gcTitleColor: "#181c21", gcSubtitleColor: "#3e4243", gcBgColor: "#f3f0e7", gcBorderColor: "#5d6d75", gcAccentColor: "#e07946", gcTitleBgColor: "#eeddd0", gcSubtitleBgColor: "#fff5eb", gcOpacity: 94 },
+  stadium: { gcTitleColor: "#ffffff", gcSubtitleColor: "#c6e9ee", gcBgColor: "#12354b", gcBorderColor: "#4ec2d4", gcAccentColor: "#90e070", gcTitleBgColor: "#1a6683", gcSubtitleBgColor: "#134960", gcOpacity: 92 },
+  night: { gcTitleColor: "#ffffff", gcSubtitleColor: "#d2cbf0", gcBgColor: "#171829", gcBorderColor: "#8878ed", gcAccentColor: "#b79bff", gcTitleBgColor: "#3b3266", gcSubtitleBgColor: "#252346", gcOpacity: 90 },
+  duotone: { gcTitleColor: "#ffffff", gcSubtitleColor: "#ffffff", gcBgColor: "#101d27", gcBorderColor: "#ff9a7a", gcAccentColor: "#ff9a7a", gcTitleBgColor: "#39566b", gcSubtitleBgColor: "#1f3342", gcOpacity: 95 },
+};
+
 const defaultOverlayState = {
   gcTitle: "",
   gcSubtitle: "",
@@ -28,13 +36,14 @@ const defaultOverlayState = {
     gcBase: "image",
   },
   style: {
-    gcTitleColor: "#151515",
-    gcSubtitleColor: "#222222",
-    gcBgColor: "#f7f7f2",
-    gcBorderColor: "#12a7a6",
-    gcAccentColor: "#d9d316",
-    gcTitleBgColor: "#2854ff",
-    gcSubtitleBgColor: "#fff200",
+    gcTitleColor: "#f4ffff",
+    gcSubtitleColor: "#c4e8e4",
+    gcBgColor: "#10232c",
+    gcBorderColor: "#3ac5b9",
+    gcAccentColor: "#55e5c9",
+    gcTitleBgColor: "#2c5b67",
+    gcSubtitleBgColor: "#152f3b",
+    gcOpacity: 88,
     mainKickerColor: "#282828",
     mainKickerBg: "#ffffff",
     mainSubtitleColor: "#ffffff",
@@ -104,6 +113,10 @@ function stripInlineMedia(state) {
 }
 
 function mergeState(base, patch) {
+  const tarjaPreset = tarjaPalettes[patch.layout?.tarjaPreset]
+    ? patch.layout.tarjaPreset
+    : patch.layout?.tarjaPreset === "frame" ? "cream" : base.layout.tarjaPreset;
+  const legacyStyle = patch.style && patch.style.gcOpacity === undefined;
   return {
     ...base,
     ...patch,
@@ -118,10 +131,13 @@ function mergeState(base, patch) {
     style: {
       ...base.style,
       ...(patch.style || {}),
+      ...(legacyStyle ? tarjaPalettes[tarjaPreset] : {}),
     },
     layout: {
       ...base.layout,
       ...(patch.layout || {}),
+      tarjaPreset,
+      presetColors: legacyStyle ? {} : (patch.layout?.presetColors || base.layout.presetColors),
       visible: {
         ...base.layout.visible,
         ...((patch.layout && patch.layout.visible) || {}),

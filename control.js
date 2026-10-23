@@ -32,34 +32,16 @@ const tarjaPresetInput = document.getElementById("tarjaPresetInput");
 
 const tarjaColorKeys = [
   "gcTitleColor", "gcSubtitleColor", "gcBgColor", "gcBorderColor",
-  "gcAccentColor", "gcTitleBgColor", "gcSubtitleBgColor",
+  "gcAccentColor", "gcTitleBgColor", "gcSubtitleBgColor", "gcOpacity",
 ];
-
-const tarjaPalettes = {
-  classic: { gcTitleColor: "#151515", gcSubtitleColor: "#222222", gcBgColor: "#f7f7f2", gcBorderColor: "#12a7a6", gcAccentColor: "#d9d316", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-  cream: { gcTitleColor: "#30302e", gcSubtitleColor: "#30302e", gcBgColor: "#f7efd9", gcBorderColor: "#87c9e2", gcAccentColor: "#ffe300", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-  stadium: { gcTitleColor: "#ffffff", gcSubtitleColor: "#e3efff", gcBgColor: "#145ca6", gcBorderColor: "#eef8ff", gcAccentColor: "#0fe1ae", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-  frame: { gcTitleColor: "#171717", gcSubtitleColor: "#202020", gcBgColor: "#fffdf9", gcBorderColor: "#04aaa5", gcAccentColor: "#f5dd16", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-  night: { gcTitleColor: "#ffffff", gcSubtitleColor: "#d4e6ff", gcBgColor: "#07101f", gcBorderColor: "#24a5ff", gcAccentColor: "#365b99", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-  duotone: { gcTitleColor: "#ffffff", gcSubtitleColor: "#0a0a0a", gcBgColor: "#101015", gcBorderColor: "#ff006e", gcAccentColor: "#fff200", gcTitleBgColor: "#2854ff", gcSubtitleBgColor: "#fff200" },
-};
 
 const textInputs = {
   gcTitle: document.getElementById("gcTitleInput"),
   gcSubtitle: document.getElementById("gcSubtitleInput"),
-  mainKicker: document.getElementById("mainKickerInput"),
-  mainSubtitle: document.getElementById("mainSubtitleInput"),
-  postAuthor: document.getElementById("postAuthorInput"),
-  postText: document.getElementById("postTextInput"),
 };
 
 const fileInputs = {
-  leftTop: document.getElementById("leftTopFile"),
-  leftBottom: document.getElementById("leftBottomFile"),
-  main: document.getElementById("mainFile"),
-  post: document.getElementById("postFile"),
   logo: document.getElementById("logoFile"),
-  gcBase: document.getElementById("gcBaseFile"),
 };
 
 const styleInputs = {
@@ -70,37 +52,20 @@ const styleInputs = {
   gcAccentColor: document.getElementById("gcAccentColorInput"),
   gcTitleBgColor: document.getElementById("gcTitleBgColorInput"),
   gcSubtitleBgColor: document.getElementById("gcSubtitleBgColorInput"),
-  mainKickerColor: document.getElementById("mainKickerColorInput"),
-  mainKickerBg: document.getElementById("mainKickerBgInput"),
-  mainSubtitleColor: document.getElementById("mainSubtitleColorInput"),
-  mainSubtitleBg: document.getElementById("mainSubtitleBgInput"),
-  postTextColor: document.getElementById("postTextColorInput"),
-  postBgColor: document.getElementById("postBgColorInput"),
+  gcOpacity: document.getElementById("gcOpacityInput"),
   gcTitleSize: document.getElementById("gcTitleSizeInput"),
   gcSubtitleSize: document.getElementById("gcSubtitleSizeInput"),
-  mainKickerSize: document.getElementById("mainKickerSizeInput"),
-  mainSubtitleSize: document.getElementById("mainSubtitleSizeInput"),
-  postSize: document.getElementById("postSizeInput"),
   logoSize: document.getElementById("logoSizeInput"),
 };
 
 const styleValueLabels = {
   gcTitleSize: document.getElementById("gcTitleSizeValue"),
   gcSubtitleSize: document.getElementById("gcSubtitleSizeValue"),
-  mainKickerSize: document.getElementById("mainKickerSizeValue"),
-  mainSubtitleSize: document.getElementById("mainSubtitleSizeValue"),
-  postSize: document.getElementById("postSizeValue"),
+  gcOpacity: document.getElementById("gcOpacityValue"),
   logoSize: document.getElementById("logoSizeValue"),
 };
 
-const ratioInput = document.getElementById("ratioInput");
-const previewWindow = document.querySelector(".preview-window");
-
 const visibleInputs = {
-  leftTop: document.getElementById("leftTopVisibleInput"),
-  leftBottom: document.getElementById("leftBottomVisibleInput"),
-  main: document.getElementById("mainVisibleInput"),
-  post: document.getElementById("postVisibleInput"),
   logo: document.getElementById("logoVisibleInput"),
 };
 
@@ -112,22 +77,19 @@ function hydrateForm(state) {
     input.value = state.style[key];
   });
   updateStyleValueLabels(state);
-  ratioInput.value = state.layout.ratio;
   tarjaPresetInput.value = state.layout.tarjaPreset;
-  previewWindow.dataset.ratio = state.layout.ratio;
   Object.entries(visibleInputs).forEach(([key, input]) => {
     input.checked = state.layout.visible[key];
   });
   liveUrlInput.value = state.youtube.liveUrl;
   likeGoalInput.value = state.youtube.likeGoal;
-  fileInputs.gcBase.disabled = state.layout.tarjaPreset !== "classic";
   renderChatHighlightControls();
   updateLiveDashboard();
 }
 
 function updateStyleValueLabels(state) {
   Object.entries(styleValueLabels).forEach(([key, label]) => {
-    label.textContent = key === "logoSize" ? `${state.style[key]}%` : `${state.style[key]}px`;
+    label.textContent = key === "logoSize" || key === "gcOpacity" ? `${state.style[key]}%` : `${state.style[key]}px`;
   });
 }
 
@@ -168,7 +130,7 @@ function updateTarjaPresetState() {
     ...currentState.layout.presetColors,
     [currentPreset]: pickTarjaColors(currentState.style),
   };
-  const colors = presetColors[preset] || tarjaPalettes[preset];
+  const colors = { ...tarjaPalettes[preset], ...presetColors[preset] };
   queueState({
     ...currentState,
     style: { ...currentState.style, ...colors },
@@ -177,7 +139,7 @@ function updateTarjaPresetState() {
   tarjaColorKeys.forEach((key) => {
     styleInputs[key].value = currentState.style[key];
   });
-  fileInputs.gcBase.disabled = preset !== "classic";
+  updateStyleValueLabels(currentState);
 }
 
 function updateLayoutState() {
@@ -190,11 +152,9 @@ function updateLayoutState() {
     ...currentState,
     layout: {
       ...currentState.layout,
-      ratio: ratioInput.value,
       visible,
     },
   });
-  previewWindow.dataset.ratio = currentState.layout.ratio;
 }
 
 function setSaveStatus(message, kind = "neutral") {
@@ -251,7 +211,7 @@ form.addEventListener("input", (event) => {
 form.addEventListener("change", (event) => {
   if (event.target === tarjaPresetInput) {
     updateTarjaPresetState();
-  } else if (event.target === ratioInput || Object.values(visibleInputs).includes(event.target)) {
+  } else if (Object.values(visibleInputs).includes(event.target)) {
     updateLayoutState();
   }
 });

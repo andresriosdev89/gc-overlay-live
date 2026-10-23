@@ -53,8 +53,8 @@ async function bootstrap() {
   server.listen(PORT, HOST, () => {
     const localUrl = `http://127.0.0.1:${PORT}`;
     console.log(`GC Overlay server running on ${HOST}:${PORT}`);
-    console.log(`Control: ${localUrl}/control.html?v=13`);
-    console.log(`Overlay: ${localUrl}/overlay.html?v=13`);
+    console.log(`Control: ${localUrl}/control.html?v=14`);
+    console.log(`Overlay: ${localUrl}/overlay.html?v=14`);
   });
 }
 

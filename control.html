@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Painel do GC Overlay</title>
-    <link rel="stylesheet" href="styles.css?v=13" />
+    <link rel="stylesheet" href="styles.css?v=14" />
   </head>
   <body class="control-body">
     <main class="control-shell">
@@ -18,7 +18,7 @@
           <p class="save-status" id="saveStatus" role="status" aria-live="polite">Carregando conteúdo...</p>
         </div>
         <nav class="header-actions">
-          <a class="button ghost" href="overlay.html?v=13" target="_blank" rel="noreferrer">Abrir overlay</a>
+          <a class="button ghost" href="overlay.html?v=14" target="_blank" rel="noreferrer">Abrir overlay</a>
           <a class="button ghost" href="#livePanel">Acompanhar live</a>
           <button class="button ghost" id="retryButton" type="button" hidden>Tentar salvar</button>
           <button class="button danger" id="resetButton" type="button">Resetar</button>
@@ -37,26 +37,6 @@
               Subtitulo do GC
               <textarea id="gcSubtitleInput" name="gcSubtitle" rows="2" maxlength="300"></textarea>
             </label>
-            <label>
-              Chamada sobre a imagem central
-              <textarea id="mainKickerInput" name="mainKicker" rows="2" maxlength="140"></textarea>
-            </label>
-            <label>
-              Linha pequena da imagem central
-              <textarea id="mainSubtitleInput" name="mainSubtitle" rows="3" maxlength="500"></textarea>
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Post / print lateral</legend>
-            <label>
-              Autor ou rede
-              <input id="postAuthorInput" name="postAuthor" maxlength="100" />
-            </label>
-            <label>
-              Texto reserva do post
-              <textarea id="postTextInput" name="postText" rows="6" maxlength="2000"></textarea>
-            </label>
           </fieldset>
 
           <fieldset>
@@ -64,15 +44,14 @@
             <label>
               Escolha o visual do GC
               <select id="tarjaPresetInput">
-                <option value="classic">Clássica OWTV</option>
-                <option value="cream">Creme esportiva</option>
-                <option value="stadium">Campo azul</option>
-                <option value="frame">Moldura de destaque</option>
-                <option value="night">Noite digital</option>
-                <option value="duotone">Faixa dupla vibrante</option>
+                <option value="classic">Vidro OWTV</option>
+                <option value="cream">Editorial claro</option>
+                <option value="stadium">Placar moderno</option>
+                <option value="night">Luz noturna</option>
+                <option value="duotone">Camadas</option>
               </select>
             </label>
-            <p class="field-help">Modelos inspirados nas referências enviadas. A logo, os textos e as cores continuam editáveis.</p>
+            <p class="field-help">Cinco visuais originais sobre fundo transparente. Cores e textos podem ser ajustados em cada modelo.</p>
           </fieldset>
 
           <fieldset>
@@ -99,38 +78,18 @@
                 <input type="color" id="gcAccentColorInput" />
               </label>
               <label>
-                Fundo da manchete na faixa dupla
+                Fundo do título em Camadas
                 <input type="color" id="gcTitleBgColorInput" />
               </label>
               <label>
-                Fundo do subtítulo na faixa dupla
+                Fundo do subtítulo em Camadas
                 <input type="color" id="gcSubtitleBgColorInput" />
               </label>
-              <label>
-                Chamada central
-                <input type="color" id="mainKickerColorInput" />
-              </label>
-              <label>
-                Fundo da chamada
-                <input type="color" id="mainKickerBgInput" />
-              </label>
-              <label>
-                Linha pequena
-                <input type="color" id="mainSubtitleColorInput" />
-              </label>
-              <label>
-                Fundo linha pequena
-                <input type="color" id="mainSubtitleBgInput" />
-              </label>
-              <label>
-                Texto do post
-                <input type="color" id="postTextColorInput" />
-              </label>
-              <label>
-                Fundo do post
-                <input type="color" id="postBgColorInput" />
-              </label>
             </div>
+            <label class="range-control">
+              <span>Opacidade do fundo da tarja <strong id="gcOpacityValue"></strong></span>
+              <input type="range" id="gcOpacityInput" min="0" max="100" step="1" />
+            </label>
           </fieldset>
 
           <fieldset>
@@ -142,18 +101,6 @@
             <label class="range-control">
               <span>Subtitulo do GC <strong id="gcSubtitleSizeValue"></strong></span>
               <input type="range" id="gcSubtitleSizeInput" min="12" max="46" step="1" />
-            </label>
-            <label class="range-control">
-              <span>Chamada central <strong id="mainKickerSizeValue"></strong></span>
-              <input type="range" id="mainKickerSizeInput" min="16" max="58" step="1" />
-            </label>
-            <label class="range-control">
-              <span>Linha pequena central <strong id="mainSubtitleSizeValue"></strong></span>
-              <input type="range" id="mainSubtitleSizeInput" min="8" max="26" step="1" />
-            </label>
-            <label class="range-control">
-              <span>Texto do post <strong id="postSizeValue"></strong></span>
-              <input type="range" id="postSizeInput" min="10" max="32" step="1" />
             </label>
             <label class="range-control">
               <span>Tamanho da logo <strong id="logoSizeValue"></strong></span>
@@ -174,71 +121,23 @@
           </fieldset>
 
           <fieldset>
-            <legend>Layout e janelas</legend>
-            <label>
-              Proporcao do overlay
-              <select id="ratioInput">
-                <option value="landscape">Horizontal 16:9</option>
-                <option value="vertical">Vertical 9:16</option>
-                <option value="square">Quadrado 1:1</option>
-              </select>
-            </label>
+            <legend>Logo da tarja</legend>
             <div class="switch-grid">
               <label>
-                <input type="checkbox" id="leftTopVisibleInput" />
-                Janela 1
-              </label>
-              <label>
-                <input type="checkbox" id="leftBottomVisibleInput" />
-                Janela 2
-              </label>
-              <label>
-                <input type="checkbox" id="mainVisibleInput" />
-                Janela central
-              </label>
-              <label>
-                <input type="checkbox" id="postVisibleInput" />
-                Janela post
-              </label>
-              <label>
                 <input type="checkbox" id="logoVisibleInput" />
-                Logo do GC
+                Mostrar logo
               </label>
             </div>
-          </fieldset>
-
-          <fieldset>
-            <legend>Imagens, PNGs e videos</legend>
             <label class="file-control">
-              Foto superior esquerda
-              <input type="file" id="leftTopFile" accept="image/png,image/jpeg,image/webp" />
-            </label>
-            <label class="file-control">
-              Foto inferior esquerda
-              <input type="file" id="leftBottomFile" accept="image/png,image/jpeg,image/webp" />
-            </label>
-            <label class="file-control">
-              Foto ou video central 16:9
-              <input type="file" id="mainFile" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/ogg" />
-            </label>
-            <label class="file-control">
-              Print ou video post 9:16
-              <input type="file" id="postFile" accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/ogg" />
-            </label>
-            <label class="file-control">
-              Logo/PNG do GC
+              Trocar logo (PNG, JPG ou WebP)
               <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp" />
-            </label>
-            <label class="file-control">
-              Imagem base do GC (somente Clássica)
-              <input type="file" id="gcBaseFile" accept="image/png,image/jpeg,image/webp" />
             </label>
           </fieldset>
         </form>
 
         <aside class="preview-panel">
           <div class="preview-window">
-            <iframe title="Preview do overlay" src="overlay.html?v=13"></iframe>
+            <iframe title="Preview do overlay" src="overlay.html?v=14"></iframe>
           </div>
           <section class="live-panel" id="livePanel" aria-label="Acompanhamento da live">
             <div class="live-stats">
@@ -267,7 +166,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=13"></script>
-    <script src="control.js?v=13"></script>
+    <script src="shared.js?v=14"></script>
+    <script src="control.js?v=14"></script>
   </body>
 </html>

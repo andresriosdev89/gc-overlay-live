@@ -7,50 +7,19 @@
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>GC Overlay - Live</title>
-    <link rel="stylesheet" href="styles.css?v=13" />
+    <link rel="stylesheet" href="overlay.css?v=14" />
   </head>
   <body class="overlay-body">
     <main class="broadcast-frame" id="overlayRoot">
-      <div class="media-grid" id="mediaGrid">
-        <section class="media-card" id="leftTopCard" data-window="leftTop">
-          <img id="leftTopImage" alt="" />
-          <span class="placeholder">Imagem 1</span>
-        </section>
-
-        <section class="media-card" id="leftBottomCard" data-window="leftBottom">
-          <img id="leftBottomImage" alt="" />
-          <span class="placeholder">Imagem 2</span>
-        </section>
-
-        <section class="main-story media-card" id="mainCard" data-window="main">
-          <img id="mainImage" alt="" />
-          <video id="mainVideo" muted loop playsinline preload="metadata"></video>
-          <div class="story-caption">
-            <p id="mainKicker"></p>
-            <p id="mainSubtitle"></p>
-          </div>
-        </section>
-
-        <section class="social-card media-card" id="postCard" data-window="post">
-          <img id="postImage" alt="" />
-          <video id="postVideo" muted loop playsinline preload="metadata"></video>
-          <div class="social-fallback">
-            <strong id="postAuthor"></strong>
-            <p id="postText"></p>
-          </div>
-        </section>
-      </div>
-
       <section class="chat-highlight" id="chatHighlight" hidden>
         <div class="chat-highlight-heading">CHAT EM DESTAQUE</div>
         <strong id="chatHighlightAuthor"></strong>
         <p id="chatHighlightText"></p>
       </section>
 
-      <section class="lower-third" id="lowerThird">
+      <section class="lower-third" id="lowerThird" hidden>
         <div class="logo-box">
           <img id="logoImage" alt="" />
-          <span class="placeholder">Logo</span>
         </div>
         <div class="gc-text">
           <h1 id="gcTitle"></h1>
@@ -59,7 +28,7 @@
       </section>
     </main>
 
-    <script src="shared.js?v=13"></script>
-    <script src="overlay.js?v=13"></script>
+    <script src="shared.js?v=14"></script>
+    <script src="overlay.js?v=14"></script>
   </body>
 </html>
